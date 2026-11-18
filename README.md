@@ -4,7 +4,7 @@ Configurador de rack para home lab.
 Web para diseñar un mini-rack de 10″ o 19″ impreso en 3D:
 
 - **Raíles de esquina** metálicos (con enlaces de compra) o impresos en L, partidos en tramos que caben en tu cama.
-- **Tapas independientes** en frontal, trasera, laterales y arriba. Cada una con un diseño propio: plantillas (lisa, ranuras, panal, rejilla, ventilador, ventana, patch panel) o un editor 2D donde colocas ventiladores, agujeros, ranuras, panales y keystones.
+- **Tapas independientes** en frontal, trasera, laterales y arriba. Cada una con un diseño propio: plantillas (lisa, ranuras, panal, rejilla, ventilador, ventana, patch panel) o un editor 2D donde colocas ventiladores, agujeros, ranuras, panales y keystones. También puedes importar tus propios diseños en **DXF o SVG**, o descargar la plantilla CAD de cada tapa con sus medidas para dibujarla en tu programa de CAD. Las tapas se agrupan por lado y se pueden unir o partir.
 - **Baldas** en la U que quieras: bandeja genérica, mini PC, router, discos o placa base vertical con fuente SFX.
 
 Lo ves en 3D, pones ventiladores con un clic sobre cualquier tapa y descargas un ZIP con todos los STL ya orientados y partidos para tu impresora.

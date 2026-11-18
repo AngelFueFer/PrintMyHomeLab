@@ -78,10 +78,16 @@ function initControls() {
 
   const pl = $('panelList');
   pl.addEventListener('click', e => {
+    const h = e.target.closest('button[data-fold]');
+    if (h) { const s = h.dataset.fold; panelFolds.has(s) ? panelFolds.delete(s) : panelFolds.add(s); saveFolds(); renderControls(); return; }
+    const ja = e.target.closest('button[data-joinall]');
+    if (ja) { joinAll(ja.dataset.joinall); return; }
     const b = e.target.closest('button[data-act]'); if (!b) return;
-    const id = b.closest('[data-pid]').dataset.pid, i = cfg.panels.findIndex(p => p.id === id);
+    const id = b.closest('[data-pid]').dataset.pid, i = cfg.panels.findIndex(p => p.id === id), p = cfg.panels[i];
     if (b.dataset.act === 'del') { cfg.panels.splice(i, 1); changed(); }
     if (b.dataset.act === 'edit') openEditor(id);
+    if (b.dataset.act === 'join') { joinUp(p); changed(true); }
+    if (b.dataset.act === 'split') { splitPanel(p); changed(true); }
   });
   pl.addEventListener('change', e => {
     const el = e.target, row = el.closest('[data-pid]'); if (!row) return;
@@ -104,6 +110,45 @@ function initControls() {
     else { const v = Math.round(+el.value); if (!isNaN(v)) s[f] = clamp(v, +el.min, +el.max); }
     changed(true);
   });
+}
+
+// ---- agrupar tapas: plegar por lado, unir contiguas, partir
+const FOLD_KEY = 'rack-panel-folds';
+let panelFolds = new Set(['front', 'rear', 'left', 'right', 'top']);
+try { const f = JSON.parse(localStorage.getItem(FOLD_KEY)); if (Array.isArray(f)) panelFolds = new Set(f); } catch (e) {}
+function saveFolds() { try { localStorage.setItem(FOLD_KEY, JSON.stringify([...panelFolds])); } catch (e) {} }
+function upperOf(p) { return p.side === 'top' ? null : cfg.panels.find(x => x.side === p.side && x.u0 === p.u0 + p.nu) || null; }
+// Une la tapa con la que tiene justo encima (mismo lado). Si las dos usan la misma plantilla, sigue siendo plantilla;
+// si no, se juntan sus formas tal cual (la de arriba sube su altura).
+function joinUp(p) {
+  const q = upperOf(p); if (!q) return;
+  if (!(p.auto && q.auto && p.tpl === q.tpl)) {
+    p.shapes = [...p.shapes, ...q.shapes.map(s => ({ ...s, y: s.y + p.nu * U }))];
+    p.auto = false;
+  }
+  p.nu += q.nu;
+  cfg.panels.splice(cfg.panels.indexOf(q), 1);
+  toast(`Unidas en ${panelLabel(p)}`);
+}
+function joinAll(side) {
+  const list = () => cfg.panels.filter(p => p.side === side).sort((a, b) => a.u0 - b.u0);
+  let n = 0;
+  for (let again = true; again;) { again = false; for (const p of list()) if (upperOf(p)) { joinUp(p); n++; again = true; break; } }
+  if (!n) { toast('No hay tapas contiguas que unir en este lado.'); return; }
+  syncConfig(cfg);
+  const big = list().find(p => p.nu * U > Math.max(...effBed().slice(0, 2)));
+  toast(big ? `${SIDES[side]} unido. Las tapas que no caben en la cama se imprimen en trozos con colas de milano.` : `${SIDES[side]} unido en ${list().length} tapa${list().length > 1 ? 's' : ''}.`);
+  changed(true);
+}
+function splitPanel(p) {
+  if (p.side === 'top' || p.nu < 2) return;
+  const n1 = Math.floor(p.nu / 2), cut = n1 * U;
+  const q = { id: uid(), side: p.side, u0: p.u0 + n1, nu: p.nu - n1, tpl: p.tpl, auto: p.auto,
+    shapes: p.auto ? [] : p.shapes.filter(s => s.y >= cut).map(s => ({ ...s, y: s.y - cut })) };
+  if (!p.auto) p.shapes = p.shapes.filter(s => s.y < cut);
+  p.nu = n1;
+  cfg.panels.push(q);
+  toast(`Partida en ${panelLabel(p)} y ${panelLabel(q)}`);
 }
 
 function renderControls() {
@@ -138,7 +183,12 @@ function renderControls() {
   for (const side of SIDE_ORDER) {
     const list = cfg.panels.filter(p => p.side === side).sort((a, b) => b.u0 - a.u0);
     const need = side === 'top' ? 1 : g.NU;
-    html += `<div class="pgroup"><div class="pghead">${SIDES[side]}<span>${side === 'top' ? (list.length ? '' : 'sin tapa') : `${Math.min(cover[side], need)}/${need}U cubiertas`}</span></div>`;
+    const folded = panelFolds.has(side), bad = list.some(p => clash.has(p.id));
+    const info = side === 'top' ? (list.length ? '' : 'sin tapa') : `${list.length} tapa${list.length === 1 ? '' : 's'} · ${Math.min(cover[side], need)}/${need}U`;
+    const strip = folded && side !== 'top' ? `<button type="button" class="pstrip" data-fold="${side}" aria-label="Ver las tapas del ${SIDES[side].toLowerCase()}">${list.map(p => `<span class="${clash.has(p.id) ? 'bad' : ''}" title="${esc(panelLabel(p))}">${miniSvg(p, g)}</span>`).join('')}</button>` : '';
+    html += `<div class="pgroup${folded ? ' folded' : ''}"><div class="pghead"><button type="button" class="pgbtn" data-fold="${side}" aria-expanded="${!folded}"><span class="chev" aria-hidden="true">▾</span>${SIDES[side]}${bad ? ' <span class="badtxt">· se pisan</span>' : ''}</button><span>${info}</span>
+      ${!folded && list.length > 1 && side !== 'top' ? `<button type="button" class="btn sm" data-joinall="${side}">Unir todas</button>` : ''}</div>${strip}`;
+    if (folded) { html += '</div>'; continue; }
     for (const p of list) {
       const tplOpts = Object.entries(TEMPLATES).filter(([k]) => k !== 'patch' || side === 'front' || side === 'rear')
         .map(([k, n]) => `<option value="${k}"${p.auto && p.tpl === k ? ' selected' : ''}>${n}</option>`).join('') + (p.auto ? '' : '<option value="" selected>Diseño propio</option>');
@@ -149,6 +199,7 @@ function renderControls() {
           <button type="button" class="btn sm" data-act="edit">Diseñar</button>
           <button type="button" class="icon" data-act="del" aria-label="Quitar tapa">✕</button></div>
           <div class="row">${range}<select data-f="tpl" aria-label="Plantilla">${tplOpts}</select></div>
+          ${side !== 'top' && (upperOf(p) || p.nu > 1) ? `<div class="row">${upperOf(p) ? `<button type="button" class="btn sm" data-act="join">Unir con la de arriba</button>` : ''}${p.nu > 1 ? `<button type="button" class="btn sm" data-act="split">Partir en dos</button>` : ''}</div>` : ''}
           ${clash.has(p.id) ? '<div class="row bad">Se pisa con otra tapa del mismo lado</div>' : ''}</div></div>`;
     }
     html += '</div>';
@@ -190,6 +241,7 @@ function primSvg(q, Lh, cls = '') {
   if (q.k === 'c') return `<circle cx="${q.x}" cy="${Y(q.y)}" r="${q.d / 2}"${cls}/>`;
   if (q.k === 'r') return `<rect x="${(q.x - q.w / 2).toFixed(2)}" y="${Y(q.y + q.h / 2)}" width="${q.w}" height="${q.h}" rx="${q.r}"${cls}/>`;
   if (q.k === 'p') return `<polygon points="${q.pts.map(([x, y]) => x.toFixed(2) + ',' + Y(y)).join(' ')}"${cls}/>`;
+  if (q.k === 'g') return `<path fill-rule="evenodd" d="${q.polys.map(P => 'M' + P.map(([x, y]) => x.toFixed(2) + ',' + Y(y)).join('L') + 'Z').join('')}"${cls}/>`;
   if (q.k === 'f') {
     const hs = (FAN_SIZES[q.s] || q.s * 0.85) / 2, r = q.s / 2 - 1;
     let o = `<rect x="${q.x - q.s / 2 - 2}" y="${Y(q.y + q.s / 2 + 2)}" width="${q.s + 4}" height="${q.s + 4}" class="fanbg"/><circle cx="${q.x}" cy="${Y(q.y)}" r="${r}"${cls} class="fanring"/>`;
@@ -566,6 +618,7 @@ const FIELDS = {
   slot: [['w', 'Largo'], ['h', 'Ancho']], slots: [['w', 'Ancho zona'], ['h', 'Alto zona'], ['sw', 'Ancho ranura'], ['pitch', 'Paso'], ['dir', 'Dirección', 'dir']],
   hex: [['w', 'Ancho zona'], ['h', 'Alto zona'], ['cell', 'Hexágono'], ['web', 'Nervio']],
   holes: [['w', 'Ancho zona'], ['h', 'Alto zona'], ['d', 'Diámetro'], ['pitch', 'Paso']], keystone: [['n', 'Cantidad', 'int']],
+  cad: [['pct', 'Escala %', 'pct'], ['rot', 'Giro', 'rot']],
 };
 function edPanel() { return ed && cfg.panels.find(p => p.id === ed.pid); }
 function openEditor(pid) {
@@ -617,13 +670,15 @@ function renderEditor() {
     ph += `<div class="edhead">${SHAPE_TYPES[s.t]}</div>`;
     const field = ([k, label, kind]) => {
       if (kind === 'fan') return `<label>${label}<select data-k="${k}">${Object.keys(FAN_SIZES).map(z => `<option value="${z}"${+z === s.s ? ' selected' : ''}>${z} mm</option>`).join('')}</select></label>`;
+      if (kind === 'pct') return `<label>${label}<input type="number" data-k="pct" step="1" min="1" value="${Math.round((s.k || 1) * 1000) / 10}"></label><div class="sub">${fmt(shapeSize(s)[0], 1)} × ${fmt(shapeSize(s)[1], 1)} mm · ${esc(s.name || '')}</div>`;
+      if (kind === 'rot') return `<label>${label}<select data-k="rot">${[0, 90, 180, 270].map(a => `<option value="${a}"${(s.rot || 0) === a ? ' selected' : ''}>${a}°</option>`).join('')}</select></label>`;
       if (kind === 'dir') return `<label>${label}<select data-k="${k}"><option value="h"${s.dir !== 'v' ? ' selected' : ''}>Horizontales</option><option value="v"${s.dir === 'v' ? ' selected' : ''}>Verticales</option></select></label>`;
       return `<label>${label}<input type="number" data-k="${k}" step="${kind === 'int' ? 1 : 0.5}" min="${kind === 'int' ? 1 : 0}" value="${s[k]}"></label>`;
     };
     ph += [['x', 'Centro a'], ['y', 'Centro b']].map(f => field(f)).join('') + FIELDS[s.t].map(field).join('');
     ph += `<div class="edbtns"><button type="button" class="btn" data-ed="dup">Duplicar</button><button type="button" class="btn" data-ed="del">Borrar</button></div>`;
   } else {
-    ph = `<div class="edhead">Diseño</div><p class="sub">${p.shapes.length ? `${p.shapes.length} forma${p.shapes.length > 1 ? 's' : ''}. ` : 'Tapa lisa. '}Añade formas arriba o elige una plantilla. Arrastra para mover, haz clic para editar medidas.</p><p class="sub">La línea discontinua marca la zona útil: lo que salga de ella se recorta para no tocar orejas, raíles ni tornillos.</p>`;
+    ph = `<div class="edhead">Diseño</div><p class="sub">${p.shapes.length ? `${p.shapes.length} forma${p.shapes.length > 1 ? 's' : ''}. ` : 'Tapa lisa. '}Añade formas arriba, elige una plantilla o importa un DXF/SVG (también puedes soltarlo encima). Arrastra para mover, haz clic para editar medidas.</p><p class="sub">«Plantilla CAD» descarga esta tapa con sus medidas en DXF y SVG para dibujarla en tu programa de CAD.</p><p class="sub">La línea discontinua marca la zona útil: lo que salga de ella se recorta para no tocar orejas, raíles ni tornillos.</p>`;
   }
   $('edProps').innerHTML = ph;
 }
@@ -644,6 +699,8 @@ $('edProps').addEventListener('change', e => {
   const el = e.target, k = el.dataset.k; if (!k) return;
   const p = edPanel(), s = p.shapes[ed.sel]; if (!s) return;
   if (k === 'dir') s.dir = el.value;
+  else if (k === 'rot') s.rot = +el.value;
+  else if (k === 'pct') { const v = +el.value; if (isNaN(v) || v <= 0) return; s.k = clamp(v, 1, 2000) / 100; }
   else { let v = +el.value; if (isNaN(v)) return; if (k === 'n') v = clamp(Math.round(v), 1, 24); if (k === 's') { const f = fitFan(p, derive(cfg), v, s.x, s.y); if (!f) { toast(`Un ventilador de ${v} mm no cabe en esta tapa.`); renderEditor(); return; } Object.assign(s, f); } else s[k] = Math.max(k === 'x' || k === 'y' || k === 'r' ? -1e4 : 1, v); }
   edChanged();
 });
@@ -694,6 +751,118 @@ window.addEventListener('keydown', e => {
   if (mv) { s.x += mv[0]; s.y += mv[1]; e.preventDefault(); edChanged(); }
   if (e.key === 'Delete' || e.key === 'Backspace') { p.shapes.splice(ed.sel, 1); ed.sel = -1; e.preventDefault(); edChanged(); }
 });
+
+// ------------------------------------------------------------------ importar / exportar CAD 2D
+const SVGNS = 'http://www.w3.org/2000/svg';
+// Lee un SVG: contornos cerrados en mm (Y hacia arriba). Se salta lo que esté dentro de #no-cortar / #referencia; #contorno marca el origen.
+function parseSVGText(text) {
+  const doc = new DOMParser().parseFromString(text, 'image/svg+xml');
+  const src = doc.documentElement;
+  if (!src || src.nodeName.toLowerCase() !== 'svg' || doc.querySelector('parsererror')) throw new Error('El archivo no es un SVG válido.');
+  for (const bad of src.querySelectorAll('script, foreignObject, image, use[href^="http"]')) bad.remove();
+  const host = document.createElement('div');
+  host.style.cssText = 'position:fixed;left:-10000px;top:0;width:400px;height:400px;overflow:hidden;visibility:hidden';
+  const svg = document.importNode(src, true);
+  host.appendChild(svg); document.body.appendChild(host);
+  try {
+    const vb = svg.viewBox && svg.viewBox.baseVal;
+    const wa = (src.getAttribute('width') || '').trim(), m = /^([\d.]+)\s*(mm|cm|in|pt|px)?$/i.exec(wa);
+    let mmPerUnit = 25.4 / 96;
+    if (m) {
+      const v = +m[1], u = (m[2] || 'px').toLowerCase();
+      const mm = u === 'mm' ? v : u === 'cm' ? v * 10 : u === 'in' ? v * 25.4 : u === 'pt' ? v * 25.4 / 72 : v * 25.4 / 96;
+      mmPerUnit = vb && vb.width ? mm / vb.width : mm / v;
+    }
+    const rootInv = svg.getScreenCTM().inverse();
+    const polys = []; let contour = null, open = 0;
+    const els = svg.querySelectorAll('path, rect, circle, ellipse, polygon, polyline');
+    for (const el of els) {
+      if (el.closest('[id^="no-cortar"], [id^="referencia"], defs, clipPath, mask, symbol, marker') && el.id !== 'contorno') continue;
+      const M = rootInv.multiply(el.getScreenCTM());
+      const tp = (x, y) => { const X = M.a * x + M.c * y + M.e, Yv = M.b * x + M.d * y + M.f; return [X * mmPerUnit, -Yv * mmPerUnit]; };
+      let subs = [];
+      const tag = el.nodeName.toLowerCase();
+      if (tag === 'polygon' || tag === 'polyline') { const pts = [...el.points].map(p => tp(p.x, p.y)); subs.push({ pts, closed: tag === 'polygon' }); }
+      else if (tag === 'rect' && !(+el.getAttribute('rx') || +el.getAttribute('ry'))) {
+        const x = el.x.baseVal.value, y = el.y.baseVal.value, w = el.width.baseVal.value, h = el.height.baseVal.value;
+        subs.push({ pts: [tp(x, y), tp(x + w, y), tp(x + w, y + h), tp(x, y + h)], closed: true });
+      } else {
+        const len = el.getTotalLength(); if (!len) continue;
+        const step = Math.max(0.25 / mmPerUnit, len / 6000), n = Math.ceil(len / step);
+        let cur = [], prev = null;
+        for (let i = 0; i <= n; i++) {
+          const q = el.getPointAtLength(Math.min(len, i * step));
+          if (prev && Math.hypot(q.x - prev.x, q.y - prev.y) > step * 2.5) { subs.push({ pts: cur }); cur = []; }
+          cur.push(tp(q.x, q.y)); prev = q;
+        }
+        subs.push({ pts: cur });
+        for (const sp of subs) if (sp.closed === undefined) { const a = sp.pts[0], b = sp.pts[sp.pts.length - 1]; sp.closed = sp.pts.length > 2 && Math.hypot(a[0] - b[0], a[1] - b[1]) < Math.max(0.3, step * mmPerUnit * 2); }
+        if (tag === 'circle' || tag === 'ellipse' || tag === 'rect') for (const sp of subs) sp.closed = true;
+      }
+      if (el.id === 'contorno') { const b = polysBBox(subs.map(x => x.pts)); contour = b; continue; }
+      for (const sp of subs) if (sp.closed && sp.pts.length > 2) polys.push(sp.pts); else open++;
+    }
+    return { polys, contour, open };
+  } finally { host.remove(); }
+}
+async function importCAD(file) {
+  const p = edPanel(); if (!p || !file) return;
+  if (file.size > 8e6) { toast('El archivo es demasiado grande (máx. 8 MB).'); return; }
+  let res;
+  try {
+    const txt = await file.text();
+    res = /\.dxf$/i.test(file.name) || /^\s*0\s*\r?\n\s*SECTION/.test(txt) ? parseDXF(txt) : parseSVGText(txt);
+  } catch (e) { console.error(e); toast('No he podido leer el archivo. Usa DXF o SVG con contornos cerrados.'); return; }
+  let polys = simplifyPolys(res.polys);
+  if (!polys.length) { toast(`No hay contornos cerrados en ${file.name}${res.open ? ` (${res.open} líneas abiertas ignoradas)` : ''}.`); return; }
+  const g = derive(cfg), sa = safeArea(p, g);
+  let b = polysBBox(polys), k = 1, cx, cy;
+  if (res.contour) {
+    // viene de una plantilla: coordenadas absolutas de la tapa
+    polys = polys.map(P => P.map(([x, y]) => [x - res.contour.x0, y - res.contour.y0]));
+    b = polysBBox(polys); cx = b.x0 + b.w / 2; cy = b.y0 + b.h / 2;
+  } else {
+    const aw = sa.a1 - sa.a0 - 2, ah = sa.b1 - sa.b0 - 2;
+    k = Math.min(1, aw / b.w, ah / b.h);
+    cx = (sa.a0 + sa.a1) / 2; cy = (sa.b0 + sa.b1) / 2;
+  }
+  const ox = b.x0 + b.w / 2, oy = b.y0 + b.h / 2;
+  const shape = { t: 'cad', name: file.name.slice(0, 60), x: Math.round(cx * 2) / 2, y: Math.round(cy * 2) / 2, k: Math.round(k * 1000) / 1000, rot: 0,
+    w0: Math.round(b.w * 100) / 100, h0: Math.round(b.h * 100) / 100,
+    polys: polys.map(P => P.map(([x, y]) => [Math.round((x - ox) * 100) / 100, Math.round((y - oy) * 100) / 100])) };
+  if (res.contour) { p.shapes = [...p.shapes.filter(s => s.t === 'fan'), shape]; }
+  else p.shapes.push(shape);
+  ed.sel = p.shapes.indexOf(shape);
+  edChanged();
+  const pts = polys.reduce((n, P) => n + P.length, 0);
+  toast(`${file.name}: ${polys.length} contornos${res.contour ? ', colocados en su sitio' : k < 1 ? `, reducido al ${Math.round(k * 100)} % para que quepa` : ''}${res.open ? ` · ${res.open} líneas abiertas ignoradas` : ''}${pts > 15000 ? ' · simplificado' : ''}`);
+}
+async function exportTemplate() {
+  const p = edPanel(); if (!p) return;
+  const t = panelTemplate(p, derive(cfg));
+  const base = 'tapa-' + panelLabel(p).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  const zip = new JSZip();
+  zip.file(base + '.dxf', templateDXF(t, base));
+  zip.file(base + '.svg', templateSVG(t, base));
+  zip.file('LEEME.txt', [
+    `Plantilla de ${panelLabel(p)} (${fmt(t.Lw, 1)} × ${fmt(t.Lh, 1)} mm, vista desde fuera, origen abajo a la izquierda).`,
+    '',
+    'DXF: capas CONTORNO (borde de la tapa), ZONA_UTIL (donde se puede recortar), REFERENCIA (tornillos), VENTILADOR (ventiladores puestos) y CORTE.',
+    'SVG: grupo "no-cortar" con las referencias y grupo "corte" con los recortes.',
+    '',
+    'Dibuja tus recortes como contornos cerrados en la capa CORTE (o fuera de "no-cortar" en el SVG) y vuelve a importar el archivo.',
+    'Si mantienes el CONTORNO, el diseño se coloca exactamente en su sitio y sustituye al actual (los ventiladores se conservan).',
+    'Un contorno dentro de otro se queda como isla (por ejemplo, el centro de una "O").',
+  ].join('\n'));
+  await offer(base + '-cad.zip', await zip.generateAsync({ type: 'blob', compression: 'DEFLATE' }));
+}
+$('edImport').addEventListener('click', () => $('edFile').click());
+$('edFile').addEventListener('change', async e => { const f = e.target.files[0]; e.target.value = ''; if (f) await importCAD(f); });
+$('edExport').addEventListener('click', exportTemplate);
+const edc = document.querySelector('.edcanvas');
+edc.addEventListener('dragover', e => { if (ed) { e.preventDefault(); edc.classList.add('drop'); } });
+edc.addEventListener('dragleave', () => edc.classList.remove('drop'));
+edc.addEventListener('drop', async e => { edc.classList.remove('drop'); if (!ed) return; e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) await importCAD(f); });
 
 // ------------------------------------------------------------------ descargas
 function fileBase(p, pc) { return `${pc.id}__x${p.inst.length}`; }

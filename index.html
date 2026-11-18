@@ -130,8 +130,20 @@ tr.piece.on td { background: var(--accent-soft); }
 .links { margin: 0; padding-left: 18px; } .links li { margin-bottom: 4px; } .links a { color: var(--accent); }
 .plist { display: flex; flex-direction: column; gap: 12px; }
 .pgroup { display: flex; flex-direction: column; gap: 6px; }
-.pghead { display: flex; justify-content: space-between; font-weight: 600; font-size: 13px; }
-.pghead span { font-weight: 400; color: var(--muted); font-size: 12px; font-family: var(--font-mono); }
+.pghead { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.pghead > span { flex: 1; text-align: right; font-weight: 400; color: var(--muted); font-size: 12px; font-family: var(--font-mono); }
+.pgbtn { border: 0; background: none; padding: 2px 0; cursor: pointer; font-weight: 600; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; }
+.pgbtn:hover { color: var(--accent); }
+.pgbtn .chev { display: inline-block; transition: transform .15s; font-size: 12px; color: var(--muted); }
+.pgbtn[aria-expanded=false] .chev { transform: rotate(-90deg); }
+.badtxt { color: var(--bad); font-weight: 400; }
+.pstrip { display: flex; flex-direction: column; align-items: center; gap: 2px; width: 100%; padding: 8px; border: 1px solid var(--line); border-radius: 7px; background: var(--panel-2); cursor: pointer; }
+.pstrip:hover { border-color: var(--accent); }
+.pstrip span { display: block; line-height: 0; }
+.pstrip span.bad svg .pf { stroke: var(--bad); }
+.pstrip svg { width: 110px; height: auto; }
+.pstrip svg .pc * { fill: var(--muted); stroke: none; }
+.pstrip svg .fanline { fill: none !important; stroke: var(--panel) !important; stroke-width: 2.5 !important; }
 .prow { display: grid; grid-template-columns: 54px minmax(0, 1fr); gap: 8px; border: 1px solid var(--line); border-radius: 7px; background: var(--panel-2); padding: 6px 8px 6px 6px; }
 .prow.clash { border-color: var(--bad); }
 .prow .prev { display: grid; place-items: center; }
@@ -158,6 +170,7 @@ body.modal { overflow: hidden; }
 .edadd { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 8px 16px; border-bottom: 1px solid var(--line); background: var(--panel-2); }
 .edbody { display: grid; grid-template-columns: minmax(0, 1fr) 260px; min-height: 0; }
 .edcanvas { background: var(--view); min-height: 0; padding: 12px; display: flex; }
+.edcanvas.drop { box-shadow: inset 0 0 0 3px var(--accent); }
 .edcanvas svg { width: 100%; height: 100%; touch-action: none; user-select: none; }
 .edcanvas .zone { fill: var(--line); opacity: .7; }
 .edcanvas .hole { fill: var(--view); stroke: var(--muted); stroke-width: 1; vector-effect: non-scaling-stroke; }
@@ -193,7 +206,7 @@ body.modal { overflow: hidden; }
   .hwlist ul { columns: 1; }
   .viewer .sel { max-width: calc(100% - 24px); }
 }
-@media (prefers-reduced-motion: reduce) { .bar i, .fold .chev { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .bar i, .fold .chev, .pgbtn .chev { transition: none; } }
 </style>
 
 <div class="app">
@@ -292,6 +305,9 @@ body.modal { overflow: hidden; }
     <div class="edtop">
       <div><h2 id="edTitle">Tapa</h2><div class="sub" id="edSize"></div></div>
       <select id="edTpl" aria-label="Plantilla"></select>
+      <button type="button" class="btn" id="edImport">Importar DXF / SVG</button>
+      <input type="file" id="edFile" accept=".dxf,.svg,image/svg+xml" hidden>
+      <button type="button" class="btn" id="edExport">Plantilla CAD</button>
       <button type="button" class="btn" id="edClear">Dejar lisa</button>
       <button type="button" class="btn primary" id="edDone">Listo</button>
     </div>
@@ -346,7 +362,7 @@ const TEMPLATES = {
 
 const SHAPE_TYPES = {
   fan: 'Ventilador', circle: 'Agujero redondo', rect: 'Rectángulo', slot: 'Ranura',
-  slots: 'Zona de ranuras', hex: 'Zona de panal', holes: 'Rejilla de agujeros', keystone: 'Keystones',
+  slots: 'Zona de ranuras', hex: 'Zona de panal', holes: 'Rejilla de agujeros', keystone: 'Keystones', cad: 'Diseño CAD importado',
 };
 
 const SHELF_TYPES = {
@@ -519,6 +535,7 @@ function prims(s) {
       return out;
     }
     case 'fan': return [{ k: 'f', x: s.x, y: s.y, s: s.s }];
+    case 'cad': return [{ k: 'g', polys: cadPolys(s) }];
     case 'keystone': {
       const out = []; for (let i = 0; i < s.n; i++) out.push({ k: 'r', x: s.x + (i - (s.n - 1) / 2) * 25, y: s.y, w: 14.9, h: 16.5, r: 0 });
       return out;
@@ -530,6 +547,7 @@ function shapeSize(s) {
   if (s.t === 'fan') return [s.s, s.s];
   if (s.t === 'circle') return [s.d, s.d];
   if (s.t === 'keystone') return [(s.n - 1) * 25 + 14.9, 16.5];
+  if (s.t === 'cad') { const k = s.k || 1, sw = ((s.rot || 0) / 90) % 2 === 1; return sw ? [s.h0 * k, s.w0 * k] : [s.w0 * k, s.h0 * k]; }
   return [s.w, s.h];
 }
 function defaultShape(t, p, g) {
@@ -650,6 +668,14 @@ function designSolid(K, shapes, sa, flipW) {
         parts.push(cs.length === 1 ? cs[0] : K.hull(cs));
       }
     } else if (q.k === 'p') parts.push(K.tr(K.prism(q.pts.map(([x, y]) => [fx(x), y]), 60), [0, 0, -30]));
+    else if (q.k === 'g') {
+      // contornos importados: par = se recorta, impar (dentro de otro) = isla que se queda
+      const polys = q.polys.filter(P => P.length >= 3).map(P => P.map(([x, y]) => [fx(x), y]));
+      const depth = polys.map((P, i) => polys.reduce((d, Q, j) => d + (j !== i && pointInPoly(P[0], Q) ? 1 : 0), 0));
+      const ev = [], od = [];
+      polys.forEach((P, i) => { try { (depth[i] % 2 ? od : ev).push(K.tr(K.prism(P, depth[i] % 2 ? 62 : 60), [0, 0, depth[i] % 2 ? -31 : -30])); } catch (e) {} });
+      if (ev.length) parts.push(od.length ? K.diff(K.union(ev), [K.union(od)]) : K.union(ev));
+    }
     else if (q.k === 'f') { fans.push(K.tr(fanCut(K, q.s, 60), [fx(q.x), q.y, -31])); keep.push(box(fx(q.x) - q.s / 2 - 2, q.y - q.s / 2 - 2, -35, q.s + 4, q.s + 4, 70)); }
   }
   if (!parts.length && !fans.length) return null;
@@ -1040,6 +1066,212 @@ function hardware(cfg, g, parts) {
   return out;
 }
 
+
+// ------------------------------------------------------------------
+//  Diseños CAD 2D: forma 'cad' = { t:'cad', name, x, y, k (escala), rot (0/90/180/270), w0, h0, polys: [[[x,y],…]] centrados }
+// ------------------------------------------------------------------
+function cadPolys(s) {
+  const k = s.k || 1, r = ((s.rot || 0) % 360 + 360) % 360 * Math.PI / 180, c = Math.cos(r), sn = Math.sin(r);
+  return (s.polys || []).map(P => P.map(([x, y]) => { const X = x * k, Y = y * k; return [s.x + X * c - Y * sn, s.y + X * sn + Y * c]; }));
+}
+function pointInPoly(pt, P) {
+  let inside = false;
+  for (let i = 0, j = P.length - 1; i < P.length; j = i++) {
+    const [xi, yi] = P[i], [xj, yj] = P[j];
+    if ((yi > pt[1]) !== (yj > pt[1]) && pt[0] < (xj - xi) * (pt[1] - yi) / (yj - yi) + xi) inside = !inside;
+  }
+  return inside;
+}
+function polysBBox(polys) {
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  for (const P of polys) for (const [x, y] of P) { if (x < x0) x0 = x; if (y < y0) y0 = y; if (x > x1) x1 = x; if (y > y1) y1 = y; }
+  return { x0, y0, x1, y1, w: x1 - x0, h: y1 - y0 };
+}
+// Quita puntos casi repetidos y limita el total de puntos
+function simplifyPolys(polys, maxPts = 20000) {
+  let tol = 0.12, out;
+  for (let it = 0; it < 8; it++) {
+    out = [];
+    for (const P of polys) {
+      const Q = [];
+      for (const p of P) { const l = Q[Q.length - 1]; if (!l || Math.hypot(p[0] - l[0], p[1] - l[1]) >= tol) Q.push(p); }
+      while (Q.length > 3 && Math.hypot(Q[0][0] - Q[Q.length - 1][0], Q[0][1] - Q[Q.length - 1][1]) < tol) Q.pop();
+      if (Q.length >= 3 && Math.abs(polyArea(Q)) > 0.05) out.push(Q);
+    }
+    if (out.reduce((n, P) => n + P.length, 0) <= maxPts) break;
+    tol *= 1.8;
+  }
+  return out;
+}
+function polyArea(P) { let a = 0; for (let i = 0; i < P.length; i++) { const p = P[i], q = P[(i + 1) % P.length]; a += p[0] * q[1] - q[0] * p[1]; } return a / 2; }
+
+function arcPts(p, q, b) {
+  const th = 4 * Math.atan(b), dx = q[0] - p[0], dy = q[1] - p[1], d = Math.hypot(dx, dy);
+  if (d < 1e-9 || Math.abs(b) < 1e-9) return [];
+  const r = d / (2 * Math.sin(th / 2)), h = r * Math.cos(th / 2);
+  const cx = (p[0] + q[0]) / 2 - dy / d * h, cy = (p[1] + q[1]) / 2 + dx / d * h;
+  const a0 = Math.atan2(p[1] - cy, p[0] - cx), n = Math.max(4, Math.ceil(Math.abs(th) / (Math.PI / 24))), R = Math.abs(r), out = [];
+  for (let k = 1; k < n; k++) { const a = a0 + th * k / n; out.push([cx + R * Math.cos(a), cy + R * Math.sin(a)]); }
+  return out;
+}
+function bulgeExpand(pts, closed) {
+  const out = [];
+  for (let i = 0; i < pts.length; i++) {
+    const p = pts[i]; out.push([p[0], p[1]]);
+    const q = pts[i + 1] || (closed ? pts[0] : null);
+    if (q && p[2]) out.push(...arcPts(p, q, p[2]));
+  }
+  return out;
+}
+function arcSample(cx, cy, rx, ry, rotA, a0, a1) {
+  const n = Math.max(8, Math.min(180, Math.ceil(Math.abs(a1 - a0) / (Math.PI / 48)))), out = [];
+  const c = Math.cos(rotA), s = Math.sin(rotA);
+  for (let k = 0; k <= n; k++) { const a = a0 + (a1 - a0) * k / n, x = rx * Math.cos(a), y = ry * Math.sin(a); out.push([cx + x * c - y * s, cy + x * s + y * c]); }
+  return out;
+}
+// Une segmentos abiertos (LINE/ARC…) en contornos cerrados
+function chainSegments(segs, tol = 0.05) {
+  const loops = []; let open = 0;
+  const rest = segs.map(s => s.slice());
+  while (rest.length) {
+    let cur = rest.pop();
+    for (let grow = true; grow;) {
+      grow = false;
+      const end = cur[cur.length - 1];
+      if (cur.length > 2 && Math.hypot(end[0] - cur[0][0], end[1] - cur[0][1]) < tol) break;
+      for (let i = 0; i < rest.length; i++) {
+        const s = rest[i], a = s[0], b = s[s.length - 1];
+        if (Math.hypot(a[0] - end[0], a[1] - end[1]) < tol) { cur = cur.concat(s.slice(1)); rest.splice(i, 1); grow = true; break; }
+        if (Math.hypot(b[0] - end[0], b[1] - end[1]) < tol) { cur = cur.concat(s.slice(0, -1).reverse()); rest.splice(i, 1); grow = true; break; }
+      }
+    }
+    const e = cur[cur.length - 1];
+    if (cur.length > 2 && Math.hypot(e[0] - cur[0][0], e[1] - cur[0][1]) < tol) loops.push(cur.slice(0, -1)); else open++;
+  }
+  return { loops, open };
+}
+const REF_LAYER = /^(CONTORNO|ZONA_UTIL|REFERENCIA|VENTILADOR|NO_CORTAR)$/i;
+
+// Lee un DXF (texto). Devuelve { polys (mm, Y hacia arriba), contour: bbox de la capa CONTORNO o null, open }
+function parseDXF(txt) {
+  const L = txt.split(/\r?\n/), pairs = [];
+  for (let i = 0; i + 1 < L.length; i += 2) pairs.push([+L[i].trim(), L[i + 1].trim()]);
+  let scale = 1;
+  for (let i = 0; i < pairs.length - 1; i++) if (pairs[i][0] === 9 && pairs[i][1] === '$INSUNITS') {
+    const u = +pairs[i + 1][1]; scale = { 1: 25.4, 2: 304.8, 5: 10, 6: 1000 }[u] || 1;
+  }
+  let i0 = pairs.findIndex(p => p[0] === 2 && p[1] === 'ENTITIES');
+  const ents = []; let cur = null;
+  for (let i = i0 < 0 ? 0 : i0 + 1; i < pairs.length; i++) {
+    const [c, v] = pairs[i];
+    if (c === 0) { if (cur) ents.push(cur); if (v === 'ENDSEC' || v === 'EOF') { cur = null; break; } cur = { type: v, g: [] }; }
+    else if (cur) cur.g.push([c, v]);
+  }
+  if (cur) ents.push(cur);
+  const loops = [], segs = []; let contour = null, poly = null;
+  const take = (pts, closed, layer) => {
+    if (!pts || pts.length < 2) return;
+    pts = pts.map(([x, y]) => [x * scale, y * scale]);
+    if (/^CONTORNO$/i.test(layer)) { const b = polysBBox([pts]); if (!contour || b.w * b.h > contour.w * contour.h) contour = b; return; }
+    if (REF_LAYER.test(layer)) return;
+    (closed ? loops : segs).push(pts);
+  };
+  for (const e of ents) {
+    const get = (c) => { const r = e.g.find(x => x[0] === c); return r ? +r[1] : undefined; };
+    const layer = (e.g.find(x => x[0] === 8) || [])[1] || '';
+    const T = e.type;
+    if (T === 'POLYLINE') { poly = { pts: [], closed: ((get(70) || 0) & 1) === 1, layer }; continue; }
+    if (T === 'VERTEX' && poly) { poly.pts.push([get(10) || 0, get(20) || 0, get(42) || 0]); continue; }
+    if (T === 'SEQEND' && poly) { take(bulgeExpand(poly.pts, poly.closed), poly.closed, poly.layer); poly = null; continue; }
+    if (T === 'LWPOLYLINE') {
+      const pts = []; let last = null;
+      for (const [c, v] of e.g) { if (c === 10) { last = [+v, 0, 0]; pts.push(last); } else if (c === 20 && last) last[1] = +v; else if (c === 42 && last) last[2] = +v; }
+      const closed = ((get(70) || 0) & 1) === 1;
+      take(bulgeExpand(pts, closed), closed, layer);
+    } else if (T === 'CIRCLE') {
+      const r = get(40); take(arcSample(get(10), get(20), r, r, 0, 0, 2 * Math.PI).slice(0, -1), true, layer);
+    } else if (T === 'ARC') {
+      const r = get(40), a0 = get(50) * Math.PI / 180; let a1 = get(51) * Math.PI / 180; if (a1 <= a0) a1 += 2 * Math.PI;
+      take(arcSample(get(10), get(20), r, r, 0, a0, a1), false, layer);
+    } else if (T === 'ELLIPSE') {
+      const mx = get(11), my = get(21), rx = Math.hypot(mx, my), a0 = get(41) ?? 0, a1 = get(42) ?? 2 * Math.PI;
+      const full = Math.abs(a1 - a0 - 2 * Math.PI) < 1e-3;
+      const pts = arcSample(get(10), get(20), rx, rx * get(40), Math.atan2(my, mx), a0, a1 < a0 ? a1 + 2 * Math.PI : a1);
+      take(full ? pts.slice(0, -1) : pts, full, layer);
+    } else if (T === 'LINE') {
+      take([[get(10), get(20)], [get(11), get(21)]], false, layer);
+    } else if (T === 'SPLINE') {
+      const fit = [], ctl = []; let last = null, lastF = null;
+      for (const [c, v] of e.g) {
+        if (c === 10) { last = [+v, 0]; ctl.push(last); } else if (c === 20 && last) last[1] = +v;
+        else if (c === 11) { lastF = [+v, 0]; fit.push(lastF); } else if (c === 21 && lastF) lastF[1] = +v;
+      }
+      const closed = ((get(70) || 0) & 1) === 1;
+      take(fit.length >= 2 ? fit : ctl, closed, layer);
+    }
+  }
+  const ch = chainSegments(segs);
+  return { polys: [...loops, ...ch.loops], contour, open: ch.open };
+}
+
+// Plantilla de una tapa para dibujar en CAD: contorno, zona útil y referencias + el diseño actual
+function panelTemplate(p, g) {
+  const { Lw, Lh } = panelDims(p, g), sa = safeArea(p, g);
+  const ref = [];   // círculos de referencia [x,y,d]
+  if (p.side === 'front' || p.side === 'rear') { for (let u = 0; u < p.nu; u++) for (const hz of g.HOLE_Z) for (const x of [g.HOLE_X, Lw - g.HOLE_X]) ref.push([x, u * U + hz, g.M6_D]); }
+  else if (p.side === 'left' || p.side === 'right') { for (const z of sideBoltZ(p.nu)) for (const a of [g.BOLT_Y, Lw - g.BOLT_Y]) ref.push([a, z, 4.4]); }
+  const fans = p.shapes.filter(s => s.t === 'fan');
+  const cuts = [];   // polígonos del diseño actual (sin ventiladores)
+  for (const s of p.shapes) if (s.t !== 'fan') for (const q of prims(s)) {
+    if (q.k === 'c') cuts.push(arcSample(q.x, q.y, q.d / 2, q.d / 2, 0, 0, 2 * Math.PI).slice(0, -1));
+    else if (q.k === 'r') cuts.push(rrectPts(q));
+    else if (q.k === 'p') cuts.push(q.pts);
+    else if (q.k === 'g') cuts.push(...q.polys);
+  }
+  return { Lw, Lh, sa, ref, fans, cuts };
+}
+function rrectPts(q) {
+  const r = Math.max(0, Math.min(q.r || 0, q.w / 2, q.h / 2)), x0 = q.x - q.w / 2, x1 = q.x + q.w / 2, y0 = q.y - q.h / 2, y1 = q.y + q.h / 2;
+  if (r < 0.05) return [[x0, y0], [x1, y0], [x1, y1], [x0, y1]];
+  const out = [];
+  for (const [cx, cy, a] of [[x1 - r, y0 + r, -Math.PI / 2], [x1 - r, y1 - r, 0], [x0 + r, y1 - r, Math.PI / 2], [x0 + r, y0 + r, Math.PI]])
+    out.push(...arcSample(cx, cy, r, r, 0, a, a + Math.PI / 2));
+  return out;
+}
+function templateDXF(t, name) {
+  const o = ['0', 'SECTION', '2', 'HEADER', '9', '$ACADVER', '1', 'AC1009', '9', '$INSUNITS', '70', '4', '0', 'ENDSEC', '0', 'SECTION', '2', 'ENTITIES'];
+  const f = (v) => (Math.round(v * 1000) / 1000).toString();
+  const pl = (pts, layer) => { o.push('0', 'POLYLINE', '8', layer, '66', '1', '70', '1'); for (const [x, y] of pts) o.push('0', 'VERTEX', '8', layer, '10', f(x), '20', f(y)); o.push('0', 'SEQEND', '8', layer); };
+  const ci = (x, y, d, layer) => o.push('0', 'CIRCLE', '8', layer, '10', f(x), '20', f(y), '40', f(d / 2));
+  pl([[0, 0], [t.Lw, 0], [t.Lw, t.Lh], [0, t.Lh]], 'CONTORNO');
+  pl([[t.sa.a0, t.sa.b0], [t.sa.a1, t.sa.b0], [t.sa.a1, t.sa.b1], [t.sa.a0, t.sa.b1]], 'ZONA_UTIL');
+  for (const [x, y, d] of t.ref) ci(x, y, d, 'REFERENCIA');
+  for (const s of t.fans) { ci(s.x, s.y, s.s, 'VENTILADOR'); pl([[s.x - s.s / 2, s.y - s.s / 2], [s.x + s.s / 2, s.y - s.s / 2], [s.x + s.s / 2, s.y + s.s / 2], [s.x - s.s / 2, s.y + s.s / 2]], 'VENTILADOR'); }
+  for (const P of t.cuts) pl(P, 'CORTE');
+  o.push('0', 'ENDSEC', '0', 'EOF');
+  return o.join('\n') + '\n';
+}
+function templateSVG(t, name) {
+  const Y = (y) => (Math.round((t.Lh - y) * 1000) / 1000);
+  const X = (x) => Math.round(x * 1000) / 1000;
+  const path = (P) => 'M' + P.map(([x, y]) => `${X(x)},${Y(y)}`).join('L') + 'Z';
+  const sa = t.sa;
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<!-- ${name}: medidas en mm. Dibuja tus recortes en el grupo "corte" (rellenos, contornos cerrados). Lo que esté en "no-cortar" es solo referencia. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="${X(t.Lw)}mm" height="${X(t.Lh)}mm" viewBox="0 0 ${X(t.Lw)} ${X(t.Lh)}">
+  <g id="no-cortar" fill="none" stroke-width="0.3">
+    <rect id="contorno" x="0" y="0" width="${X(t.Lw)}" height="${X(t.Lh)}" stroke="#000"/>
+    <rect id="zona-util" x="${X(sa.a0)}" y="${Y(sa.b1)}" width="${X(sa.a1 - sa.a0)}" height="${X(sa.b1 - sa.b0)}" stroke="#d2601a" stroke-dasharray="2 1.5"/>
+${t.ref.map(([x, y, d]) => `    <circle cx="${X(x)}" cy="${Y(y)}" r="${X(d / 2)}" stroke="#888"/>`).join('\n')}
+${t.fans.map(s => `    <circle cx="${X(s.x)}" cy="${Y(s.y)}" r="${X(s.s / 2)}" stroke="#1f7ae0"/>`).join('\n')}
+  </g>
+  <g id="corte" fill="#222" fill-rule="evenodd">
+${t.cuts.map(P => `    <path d="${path(P)}"/>`).join('\n')}
+  </g>
+</svg>
+`;
+}
+
 // ===================================================================
 //  Kernels CSG: Manifold (WASM, rápido) y JSCAD (JS puro, respaldo)
 // ===================================================================
@@ -1314,10 +1546,16 @@ function initControls() {
 
   const pl = $('panelList');
   pl.addEventListener('click', e => {
+    const h = e.target.closest('button[data-fold]');
+    if (h) { const s = h.dataset.fold; panelFolds.has(s) ? panelFolds.delete(s) : panelFolds.add(s); saveFolds(); renderControls(); return; }
+    const ja = e.target.closest('button[data-joinall]');
+    if (ja) { joinAll(ja.dataset.joinall); return; }
     const b = e.target.closest('button[data-act]'); if (!b) return;
-    const id = b.closest('[data-pid]').dataset.pid, i = cfg.panels.findIndex(p => p.id === id);
+    const id = b.closest('[data-pid]').dataset.pid, i = cfg.panels.findIndex(p => p.id === id), p = cfg.panels[i];
     if (b.dataset.act === 'del') { cfg.panels.splice(i, 1); changed(); }
     if (b.dataset.act === 'edit') openEditor(id);
+    if (b.dataset.act === 'join') { joinUp(p); changed(true); }
+    if (b.dataset.act === 'split') { splitPanel(p); changed(true); }
   });
   pl.addEventListener('change', e => {
     const el = e.target, row = el.closest('[data-pid]'); if (!row) return;
@@ -1340,6 +1578,45 @@ function initControls() {
     else { const v = Math.round(+el.value); if (!isNaN(v)) s[f] = clamp(v, +el.min, +el.max); }
     changed(true);
   });
+}
+
+// ---- agrupar tapas: plegar por lado, unir contiguas, partir
+const FOLD_KEY = 'rack-panel-folds';
+let panelFolds = new Set(['front', 'rear', 'left', 'right', 'top']);
+try { const f = JSON.parse(localStorage.getItem(FOLD_KEY)); if (Array.isArray(f)) panelFolds = new Set(f); } catch (e) {}
+function saveFolds() { try { localStorage.setItem(FOLD_KEY, JSON.stringify([...panelFolds])); } catch (e) {} }
+function upperOf(p) { return p.side === 'top' ? null : cfg.panels.find(x => x.side === p.side && x.u0 === p.u0 + p.nu) || null; }
+// Une la tapa con la que tiene justo encima (mismo lado). Si las dos usan la misma plantilla, sigue siendo plantilla;
+// si no, se juntan sus formas tal cual (la de arriba sube su altura).
+function joinUp(p) {
+  const q = upperOf(p); if (!q) return;
+  if (!(p.auto && q.auto && p.tpl === q.tpl)) {
+    p.shapes = [...p.shapes, ...q.shapes.map(s => ({ ...s, y: s.y + p.nu * U }))];
+    p.auto = false;
+  }
+  p.nu += q.nu;
+  cfg.panels.splice(cfg.panels.indexOf(q), 1);
+  toast(`Unidas en ${panelLabel(p)}`);
+}
+function joinAll(side) {
+  const list = () => cfg.panels.filter(p => p.side === side).sort((a, b) => a.u0 - b.u0);
+  let n = 0;
+  for (let again = true; again;) { again = false; for (const p of list()) if (upperOf(p)) { joinUp(p); n++; again = true; break; } }
+  if (!n) { toast('No hay tapas contiguas que unir en este lado.'); return; }
+  syncConfig(cfg);
+  const big = list().find(p => p.nu * U > Math.max(...effBed().slice(0, 2)));
+  toast(big ? `${SIDES[side]} unido. Las tapas que no caben en la cama se imprimen en trozos con colas de milano.` : `${SIDES[side]} unido en ${list().length} tapa${list().length > 1 ? 's' : ''}.`);
+  changed(true);
+}
+function splitPanel(p) {
+  if (p.side === 'top' || p.nu < 2) return;
+  const n1 = Math.floor(p.nu / 2), cut = n1 * U;
+  const q = { id: uid(), side: p.side, u0: p.u0 + n1, nu: p.nu - n1, tpl: p.tpl, auto: p.auto,
+    shapes: p.auto ? [] : p.shapes.filter(s => s.y >= cut).map(s => ({ ...s, y: s.y - cut })) };
+  if (!p.auto) p.shapes = p.shapes.filter(s => s.y < cut);
+  p.nu = n1;
+  cfg.panels.push(q);
+  toast(`Partida en ${panelLabel(p)} y ${panelLabel(q)}`);
 }
 
 function renderControls() {
@@ -1374,7 +1651,12 @@ function renderControls() {
   for (const side of SIDE_ORDER) {
     const list = cfg.panels.filter(p => p.side === side).sort((a, b) => b.u0 - a.u0);
     const need = side === 'top' ? 1 : g.NU;
-    html += `<div class="pgroup"><div class="pghead">${SIDES[side]}<span>${side === 'top' ? (list.length ? '' : 'sin tapa') : `${Math.min(cover[side], need)}/${need}U cubiertas`}</span></div>`;
+    const folded = panelFolds.has(side), bad = list.some(p => clash.has(p.id));
+    const info = side === 'top' ? (list.length ? '' : 'sin tapa') : `${list.length} tapa${list.length === 1 ? '' : 's'} · ${Math.min(cover[side], need)}/${need}U`;
+    const strip = folded && side !== 'top' ? `<button type="button" class="pstrip" data-fold="${side}" aria-label="Ver las tapas del ${SIDES[side].toLowerCase()}">${list.map(p => `<span class="${clash.has(p.id) ? 'bad' : ''}" title="${esc(panelLabel(p))}">${miniSvg(p, g)}</span>`).join('')}</button>` : '';
+    html += `<div class="pgroup${folded ? ' folded' : ''}"><div class="pghead"><button type="button" class="pgbtn" data-fold="${side}" aria-expanded="${!folded}"><span class="chev" aria-hidden="true">▾</span>${SIDES[side]}${bad ? ' <span class="badtxt">· se pisan</span>' : ''}</button><span>${info}</span>
+      ${!folded && list.length > 1 && side !== 'top' ? `<button type="button" class="btn sm" data-joinall="${side}">Unir todas</button>` : ''}</div>${strip}`;
+    if (folded) { html += '</div>'; continue; }
     for (const p of list) {
       const tplOpts = Object.entries(TEMPLATES).filter(([k]) => k !== 'patch' || side === 'front' || side === 'rear')
         .map(([k, n]) => `<option value="${k}"${p.auto && p.tpl === k ? ' selected' : ''}>${n}</option>`).join('') + (p.auto ? '' : '<option value="" selected>Diseño propio</option>');
@@ -1385,6 +1667,7 @@ function renderControls() {
           <button type="button" class="btn sm" data-act="edit">Diseñar</button>
           <button type="button" class="icon" data-act="del" aria-label="Quitar tapa">✕</button></div>
           <div class="row">${range}<select data-f="tpl" aria-label="Plantilla">${tplOpts}</select></div>
+          ${side !== 'top' && (upperOf(p) || p.nu > 1) ? `<div class="row">${upperOf(p) ? `<button type="button" class="btn sm" data-act="join">Unir con la de arriba</button>` : ''}${p.nu > 1 ? `<button type="button" class="btn sm" data-act="split">Partir en dos</button>` : ''}</div>` : ''}
           ${clash.has(p.id) ? '<div class="row bad">Se pisa con otra tapa del mismo lado</div>' : ''}</div></div>`;
     }
     html += '</div>';
@@ -1426,6 +1709,7 @@ function primSvg(q, Lh, cls = '') {
   if (q.k === 'c') return `<circle cx="${q.x}" cy="${Y(q.y)}" r="${q.d / 2}"${cls}/>`;
   if (q.k === 'r') return `<rect x="${(q.x - q.w / 2).toFixed(2)}" y="${Y(q.y + q.h / 2)}" width="${q.w}" height="${q.h}" rx="${q.r}"${cls}/>`;
   if (q.k === 'p') return `<polygon points="${q.pts.map(([x, y]) => x.toFixed(2) + ',' + Y(y)).join(' ')}"${cls}/>`;
+  if (q.k === 'g') return `<path fill-rule="evenodd" d="${q.polys.map(P => 'M' + P.map(([x, y]) => x.toFixed(2) + ',' + Y(y)).join('L') + 'Z').join('')}"${cls}/>`;
   if (q.k === 'f') {
     const hs = (FAN_SIZES[q.s] || q.s * 0.85) / 2, r = q.s / 2 - 1;
     let o = `<rect x="${q.x - q.s / 2 - 2}" y="${Y(q.y + q.s / 2 + 2)}" width="${q.s + 4}" height="${q.s + 4}" class="fanbg"/><circle cx="${q.x}" cy="${Y(q.y)}" r="${r}"${cls} class="fanring"/>`;
@@ -1802,6 +2086,7 @@ const FIELDS = {
   slot: [['w', 'Largo'], ['h', 'Ancho']], slots: [['w', 'Ancho zona'], ['h', 'Alto zona'], ['sw', 'Ancho ranura'], ['pitch', 'Paso'], ['dir', 'Dirección', 'dir']],
   hex: [['w', 'Ancho zona'], ['h', 'Alto zona'], ['cell', 'Hexágono'], ['web', 'Nervio']],
   holes: [['w', 'Ancho zona'], ['h', 'Alto zona'], ['d', 'Diámetro'], ['pitch', 'Paso']], keystone: [['n', 'Cantidad', 'int']],
+  cad: [['pct', 'Escala %', 'pct'], ['rot', 'Giro', 'rot']],
 };
 function edPanel() { return ed && cfg.panels.find(p => p.id === ed.pid); }
 function openEditor(pid) {
@@ -1853,13 +2138,15 @@ function renderEditor() {
     ph += `<div class="edhead">${SHAPE_TYPES[s.t]}</div>`;
     const field = ([k, label, kind]) => {
       if (kind === 'fan') return `<label>${label}<select data-k="${k}">${Object.keys(FAN_SIZES).map(z => `<option value="${z}"${+z === s.s ? ' selected' : ''}>${z} mm</option>`).join('')}</select></label>`;
+      if (kind === 'pct') return `<label>${label}<input type="number" data-k="pct" step="1" min="1" value="${Math.round((s.k || 1) * 1000) / 10}"></label><div class="sub">${fmt(shapeSize(s)[0], 1)} × ${fmt(shapeSize(s)[1], 1)} mm · ${esc(s.name || '')}</div>`;
+      if (kind === 'rot') return `<label>${label}<select data-k="rot">${[0, 90, 180, 270].map(a => `<option value="${a}"${(s.rot || 0) === a ? ' selected' : ''}>${a}°</option>`).join('')}</select></label>`;
       if (kind === 'dir') return `<label>${label}<select data-k="${k}"><option value="h"${s.dir !== 'v' ? ' selected' : ''}>Horizontales</option><option value="v"${s.dir === 'v' ? ' selected' : ''}>Verticales</option></select></label>`;
       return `<label>${label}<input type="number" data-k="${k}" step="${kind === 'int' ? 1 : 0.5}" min="${kind === 'int' ? 1 : 0}" value="${s[k]}"></label>`;
     };
     ph += [['x', 'Centro a'], ['y', 'Centro b']].map(f => field(f)).join('') + FIELDS[s.t].map(field).join('');
     ph += `<div class="edbtns"><button type="button" class="btn" data-ed="dup">Duplicar</button><button type="button" class="btn" data-ed="del">Borrar</button></div>`;
   } else {
-    ph = `<div class="edhead">Diseño</div><p class="sub">${p.shapes.length ? `${p.shapes.length} forma${p.shapes.length > 1 ? 's' : ''}. ` : 'Tapa lisa. '}Añade formas arriba o elige una plantilla. Arrastra para mover, haz clic para editar medidas.</p><p class="sub">La línea discontinua marca la zona útil: lo que salga de ella se recorta para no tocar orejas, raíles ni tornillos.</p>`;
+    ph = `<div class="edhead">Diseño</div><p class="sub">${p.shapes.length ? `${p.shapes.length} forma${p.shapes.length > 1 ? 's' : ''}. ` : 'Tapa lisa. '}Añade formas arriba, elige una plantilla o importa un DXF/SVG (también puedes soltarlo encima). Arrastra para mover, haz clic para editar medidas.</p><p class="sub">«Plantilla CAD» descarga esta tapa con sus medidas en DXF y SVG para dibujarla en tu programa de CAD.</p><p class="sub">La línea discontinua marca la zona útil: lo que salga de ella se recorta para no tocar orejas, raíles ni tornillos.</p>`;
   }
   $('edProps').innerHTML = ph;
 }
@@ -1880,6 +2167,8 @@ $('edProps').addEventListener('change', e => {
   const el = e.target, k = el.dataset.k; if (!k) return;
   const p = edPanel(), s = p.shapes[ed.sel]; if (!s) return;
   if (k === 'dir') s.dir = el.value;
+  else if (k === 'rot') s.rot = +el.value;
+  else if (k === 'pct') { const v = +el.value; if (isNaN(v) || v <= 0) return; s.k = clamp(v, 1, 2000) / 100; }
   else { let v = +el.value; if (isNaN(v)) return; if (k === 'n') v = clamp(Math.round(v), 1, 24); if (k === 's') { const f = fitFan(p, derive(cfg), v, s.x, s.y); if (!f) { toast(`Un ventilador de ${v} mm no cabe en esta tapa.`); renderEditor(); return; } Object.assign(s, f); } else s[k] = Math.max(k === 'x' || k === 'y' || k === 'r' ? -1e4 : 1, v); }
   edChanged();
 });
@@ -1930,6 +2219,118 @@ window.addEventListener('keydown', e => {
   if (mv) { s.x += mv[0]; s.y += mv[1]; e.preventDefault(); edChanged(); }
   if (e.key === 'Delete' || e.key === 'Backspace') { p.shapes.splice(ed.sel, 1); ed.sel = -1; e.preventDefault(); edChanged(); }
 });
+
+// ------------------------------------------------------------------ importar / exportar CAD 2D
+const SVGNS = 'http://www.w3.org/2000/svg';
+// Lee un SVG: contornos cerrados en mm (Y hacia arriba). Se salta lo que esté dentro de #no-cortar / #referencia; #contorno marca el origen.
+function parseSVGText(text) {
+  const doc = new DOMParser().parseFromString(text, 'image/svg+xml');
+  const src = doc.documentElement;
+  if (!src || src.nodeName.toLowerCase() !== 'svg' || doc.querySelector('parsererror')) throw new Error('El archivo no es un SVG válido.');
+  for (const bad of src.querySelectorAll('script, foreignObject, image, use[href^="http"]')) bad.remove();
+  const host = document.createElement('div');
+  host.style.cssText = 'position:fixed;left:-10000px;top:0;width:400px;height:400px;overflow:hidden;visibility:hidden';
+  const svg = document.importNode(src, true);
+  host.appendChild(svg); document.body.appendChild(host);
+  try {
+    const vb = svg.viewBox && svg.viewBox.baseVal;
+    const wa = (src.getAttribute('width') || '').trim(), m = /^([\d.]+)\s*(mm|cm|in|pt|px)?$/i.exec(wa);
+    let mmPerUnit = 25.4 / 96;
+    if (m) {
+      const v = +m[1], u = (m[2] || 'px').toLowerCase();
+      const mm = u === 'mm' ? v : u === 'cm' ? v * 10 : u === 'in' ? v * 25.4 : u === 'pt' ? v * 25.4 / 72 : v * 25.4 / 96;
+      mmPerUnit = vb && vb.width ? mm / vb.width : mm / v;
+    }
+    const rootInv = svg.getScreenCTM().inverse();
+    const polys = []; let contour = null, open = 0;
+    const els = svg.querySelectorAll('path, rect, circle, ellipse, polygon, polyline');
+    for (const el of els) {
+      if (el.closest('[id^="no-cortar"], [id^="referencia"], defs, clipPath, mask, symbol, marker') && el.id !== 'contorno') continue;
+      const M = rootInv.multiply(el.getScreenCTM());
+      const tp = (x, y) => { const X = M.a * x + M.c * y + M.e, Yv = M.b * x + M.d * y + M.f; return [X * mmPerUnit, -Yv * mmPerUnit]; };
+      let subs = [];
+      const tag = el.nodeName.toLowerCase();
+      if (tag === 'polygon' || tag === 'polyline') { const pts = [...el.points].map(p => tp(p.x, p.y)); subs.push({ pts, closed: tag === 'polygon' }); }
+      else if (tag === 'rect' && !(+el.getAttribute('rx') || +el.getAttribute('ry'))) {
+        const x = el.x.baseVal.value, y = el.y.baseVal.value, w = el.width.baseVal.value, h = el.height.baseVal.value;
+        subs.push({ pts: [tp(x, y), tp(x + w, y), tp(x + w, y + h), tp(x, y + h)], closed: true });
+      } else {
+        const len = el.getTotalLength(); if (!len) continue;
+        const step = Math.max(0.25 / mmPerUnit, len / 6000), n = Math.ceil(len / step);
+        let cur = [], prev = null;
+        for (let i = 0; i <= n; i++) {
+          const q = el.getPointAtLength(Math.min(len, i * step));
+          if (prev && Math.hypot(q.x - prev.x, q.y - prev.y) > step * 2.5) { subs.push({ pts: cur }); cur = []; }
+          cur.push(tp(q.x, q.y)); prev = q;
+        }
+        subs.push({ pts: cur });
+        for (const sp of subs) if (sp.closed === undefined) { const a = sp.pts[0], b = sp.pts[sp.pts.length - 1]; sp.closed = sp.pts.length > 2 && Math.hypot(a[0] - b[0], a[1] - b[1]) < Math.max(0.3, step * mmPerUnit * 2); }
+        if (tag === 'circle' || tag === 'ellipse' || tag === 'rect') for (const sp of subs) sp.closed = true;
+      }
+      if (el.id === 'contorno') { const b = polysBBox(subs.map(x => x.pts)); contour = b; continue; }
+      for (const sp of subs) if (sp.closed && sp.pts.length > 2) polys.push(sp.pts); else open++;
+    }
+    return { polys, contour, open };
+  } finally { host.remove(); }
+}
+async function importCAD(file) {
+  const p = edPanel(); if (!p || !file) return;
+  if (file.size > 8e6) { toast('El archivo es demasiado grande (máx. 8 MB).'); return; }
+  let res;
+  try {
+    const txt = await file.text();
+    res = /\.dxf$/i.test(file.name) || /^\s*0\s*\r?\n\s*SECTION/.test(txt) ? parseDXF(txt) : parseSVGText(txt);
+  } catch (e) { console.error(e); toast('No he podido leer el archivo. Usa DXF o SVG con contornos cerrados.'); return; }
+  let polys = simplifyPolys(res.polys);
+  if (!polys.length) { toast(`No hay contornos cerrados en ${file.name}${res.open ? ` (${res.open} líneas abiertas ignoradas)` : ''}.`); return; }
+  const g = derive(cfg), sa = safeArea(p, g);
+  let b = polysBBox(polys), k = 1, cx, cy;
+  if (res.contour) {
+    // viene de una plantilla: coordenadas absolutas de la tapa
+    polys = polys.map(P => P.map(([x, y]) => [x - res.contour.x0, y - res.contour.y0]));
+    b = polysBBox(polys); cx = b.x0 + b.w / 2; cy = b.y0 + b.h / 2;
+  } else {
+    const aw = sa.a1 - sa.a0 - 2, ah = sa.b1 - sa.b0 - 2;
+    k = Math.min(1, aw / b.w, ah / b.h);
+    cx = (sa.a0 + sa.a1) / 2; cy = (sa.b0 + sa.b1) / 2;
+  }
+  const ox = b.x0 + b.w / 2, oy = b.y0 + b.h / 2;
+  const shape = { t: 'cad', name: file.name.slice(0, 60), x: Math.round(cx * 2) / 2, y: Math.round(cy * 2) / 2, k: Math.round(k * 1000) / 1000, rot: 0,
+    w0: Math.round(b.w * 100) / 100, h0: Math.round(b.h * 100) / 100,
+    polys: polys.map(P => P.map(([x, y]) => [Math.round((x - ox) * 100) / 100, Math.round((y - oy) * 100) / 100])) };
+  if (res.contour) { p.shapes = [...p.shapes.filter(s => s.t === 'fan'), shape]; }
+  else p.shapes.push(shape);
+  ed.sel = p.shapes.indexOf(shape);
+  edChanged();
+  const pts = polys.reduce((n, P) => n + P.length, 0);
+  toast(`${file.name}: ${polys.length} contornos${res.contour ? ', colocados en su sitio' : k < 1 ? `, reducido al ${Math.round(k * 100)} % para que quepa` : ''}${res.open ? ` · ${res.open} líneas abiertas ignoradas` : ''}${pts > 15000 ? ' · simplificado' : ''}`);
+}
+async function exportTemplate() {
+  const p = edPanel(); if (!p) return;
+  const t = panelTemplate(p, derive(cfg));
+  const base = 'tapa-' + panelLabel(p).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  const zip = new JSZip();
+  zip.file(base + '.dxf', templateDXF(t, base));
+  zip.file(base + '.svg', templateSVG(t, base));
+  zip.file('LEEME.txt', [
+    `Plantilla de ${panelLabel(p)} (${fmt(t.Lw, 1)} × ${fmt(t.Lh, 1)} mm, vista desde fuera, origen abajo a la izquierda).`,
+    '',
+    'DXF: capas CONTORNO (borde de la tapa), ZONA_UTIL (donde se puede recortar), REFERENCIA (tornillos), VENTILADOR (ventiladores puestos) y CORTE.',
+    'SVG: grupo "no-cortar" con las referencias y grupo "corte" con los recortes.',
+    '',
+    'Dibuja tus recortes como contornos cerrados en la capa CORTE (o fuera de "no-cortar" en el SVG) y vuelve a importar el archivo.',
+    'Si mantienes el CONTORNO, el diseño se coloca exactamente en su sitio y sustituye al actual (los ventiladores se conservan).',
+    'Un contorno dentro de otro se queda como isla (por ejemplo, el centro de una "O").',
+  ].join('\n'));
+  await offer(base + '-cad.zip', await zip.generateAsync({ type: 'blob', compression: 'DEFLATE' }));
+}
+$('edImport').addEventListener('click', () => $('edFile').click());
+$('edFile').addEventListener('change', async e => { const f = e.target.files[0]; e.target.value = ''; if (f) await importCAD(f); });
+$('edExport').addEventListener('click', exportTemplate);
+const edc = document.querySelector('.edcanvas');
+edc.addEventListener('dragover', e => { if (ed) { e.preventDefault(); edc.classList.add('drop'); } });
+edc.addEventListener('dragleave', () => edc.classList.remove('drop'));
+edc.addEventListener('drop', async e => { edc.classList.remove('drop'); if (!ed) return; e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) await importCAD(f); });
 
 // ------------------------------------------------------------------ descargas
 function fileBase(p, pc) { return `${pc.id}__x${p.inst.length}`; }

@@ -21,7 +21,7 @@ export const TEMPLATES = {
 
 export const SHAPE_TYPES = {
   fan: 'Ventilador', circle: 'Agujero redondo', rect: 'Rectángulo', slot: 'Ranura',
-  slots: 'Zona de ranuras', hex: 'Zona de panal', holes: 'Rejilla de agujeros', keystone: 'Keystones',
+  slots: 'Zona de ranuras', hex: 'Zona de panal', holes: 'Rejilla de agujeros', keystone: 'Keystones', cad: 'Diseño CAD importado',
 };
 
 export const SHELF_TYPES = {
@@ -194,6 +194,7 @@ export function prims(s) {
       return out;
     }
     case 'fan': return [{ k: 'f', x: s.x, y: s.y, s: s.s }];
+    case 'cad': return [{ k: 'g', polys: cadPolys(s) }];
     case 'keystone': {
       const out = []; for (let i = 0; i < s.n; i++) out.push({ k: 'r', x: s.x + (i - (s.n - 1) / 2) * 25, y: s.y, w: 14.9, h: 16.5, r: 0 });
       return out;
@@ -205,6 +206,7 @@ export function shapeSize(s) {
   if (s.t === 'fan') return [s.s, s.s];
   if (s.t === 'circle') return [s.d, s.d];
   if (s.t === 'keystone') return [(s.n - 1) * 25 + 14.9, 16.5];
+  if (s.t === 'cad') { const k = s.k || 1, sw = ((s.rot || 0) / 90) % 2 === 1; return sw ? [s.h0 * k, s.w0 * k] : [s.w0 * k, s.h0 * k]; }
   return [s.w, s.h];
 }
 export function defaultShape(t, p, g) {
@@ -325,6 +327,14 @@ function designSolid(K, shapes, sa, flipW) {
         parts.push(cs.length === 1 ? cs[0] : K.hull(cs));
       }
     } else if (q.k === 'p') parts.push(K.tr(K.prism(q.pts.map(([x, y]) => [fx(x), y]), 60), [0, 0, -30]));
+    else if (q.k === 'g') {
+      // contornos importados: par = se recorta, impar (dentro de otro) = isla que se queda
+      const polys = q.polys.filter(P => P.length >= 3).map(P => P.map(([x, y]) => [fx(x), y]));
+      const depth = polys.map((P, i) => polys.reduce((d, Q, j) => d + (j !== i && pointInPoly(P[0], Q) ? 1 : 0), 0));
+      const ev = [], od = [];
+      polys.forEach((P, i) => { try { (depth[i] % 2 ? od : ev).push(K.tr(K.prism(P, depth[i] % 2 ? 62 : 60), [0, 0, depth[i] % 2 ? -31 : -30])); } catch (e) {} });
+      if (ev.length) parts.push(od.length ? K.diff(K.union(ev), [K.union(od)]) : K.union(ev));
+    }
     else if (q.k === 'f') { fans.push(K.tr(fanCut(K, q.s, 60), [fx(q.x), q.y, -31])); keep.push(box(fx(q.x) - q.s / 2 - 2, q.y - q.s / 2 - 2, -35, q.s + 4, q.s + 4, 70)); }
   }
   if (!parts.length && !fans.length) return null;
@@ -713,4 +723,210 @@ export function hardware(cfg, g, parts) {
   const placas = shelves.filter(s => s.type === 'placa').length;
   if (placas) { out.push(['Insertos M3 + tornillos M3×8 para la placa base', 8 * placas]); out.push(['Tornillos M3×10 placa de montaje–bandeja', 3 * placas]); }
   return out;
+}
+
+
+// ------------------------------------------------------------------
+//  Diseños CAD 2D: forma 'cad' = { t:'cad', name, x, y, k (escala), rot (0/90/180/270), w0, h0, polys: [[[x,y],…]] centrados }
+// ------------------------------------------------------------------
+export function cadPolys(s) {
+  const k = s.k || 1, r = ((s.rot || 0) % 360 + 360) % 360 * Math.PI / 180, c = Math.cos(r), sn = Math.sin(r);
+  return (s.polys || []).map(P => P.map(([x, y]) => { const X = x * k, Y = y * k; return [s.x + X * c - Y * sn, s.y + X * sn + Y * c]; }));
+}
+export function pointInPoly(pt, P) {
+  let inside = false;
+  for (let i = 0, j = P.length - 1; i < P.length; j = i++) {
+    const [xi, yi] = P[i], [xj, yj] = P[j];
+    if ((yi > pt[1]) !== (yj > pt[1]) && pt[0] < (xj - xi) * (pt[1] - yi) / (yj - yi) + xi) inside = !inside;
+  }
+  return inside;
+}
+export function polysBBox(polys) {
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  for (const P of polys) for (const [x, y] of P) { if (x < x0) x0 = x; if (y < y0) y0 = y; if (x > x1) x1 = x; if (y > y1) y1 = y; }
+  return { x0, y0, x1, y1, w: x1 - x0, h: y1 - y0 };
+}
+// Quita puntos casi repetidos y limita el total de puntos
+export function simplifyPolys(polys, maxPts = 20000) {
+  let tol = 0.12, out;
+  for (let it = 0; it < 8; it++) {
+    out = [];
+    for (const P of polys) {
+      const Q = [];
+      for (const p of P) { const l = Q[Q.length - 1]; if (!l || Math.hypot(p[0] - l[0], p[1] - l[1]) >= tol) Q.push(p); }
+      while (Q.length > 3 && Math.hypot(Q[0][0] - Q[Q.length - 1][0], Q[0][1] - Q[Q.length - 1][1]) < tol) Q.pop();
+      if (Q.length >= 3 && Math.abs(polyArea(Q)) > 0.05) out.push(Q);
+    }
+    if (out.reduce((n, P) => n + P.length, 0) <= maxPts) break;
+    tol *= 1.8;
+  }
+  return out;
+}
+function polyArea(P) { let a = 0; for (let i = 0; i < P.length; i++) { const p = P[i], q = P[(i + 1) % P.length]; a += p[0] * q[1] - q[0] * p[1]; } return a / 2; }
+
+function arcPts(p, q, b) {
+  const th = 4 * Math.atan(b), dx = q[0] - p[0], dy = q[1] - p[1], d = Math.hypot(dx, dy);
+  if (d < 1e-9 || Math.abs(b) < 1e-9) return [];
+  const r = d / (2 * Math.sin(th / 2)), h = r * Math.cos(th / 2);
+  const cx = (p[0] + q[0]) / 2 - dy / d * h, cy = (p[1] + q[1]) / 2 + dx / d * h;
+  const a0 = Math.atan2(p[1] - cy, p[0] - cx), n = Math.max(4, Math.ceil(Math.abs(th) / (Math.PI / 24))), R = Math.abs(r), out = [];
+  for (let k = 1; k < n; k++) { const a = a0 + th * k / n; out.push([cx + R * Math.cos(a), cy + R * Math.sin(a)]); }
+  return out;
+}
+function bulgeExpand(pts, closed) {
+  const out = [];
+  for (let i = 0; i < pts.length; i++) {
+    const p = pts[i]; out.push([p[0], p[1]]);
+    const q = pts[i + 1] || (closed ? pts[0] : null);
+    if (q && p[2]) out.push(...arcPts(p, q, p[2]));
+  }
+  return out;
+}
+function arcSample(cx, cy, rx, ry, rotA, a0, a1) {
+  const n = Math.max(8, Math.min(180, Math.ceil(Math.abs(a1 - a0) / (Math.PI / 48)))), out = [];
+  const c = Math.cos(rotA), s = Math.sin(rotA);
+  for (let k = 0; k <= n; k++) { const a = a0 + (a1 - a0) * k / n, x = rx * Math.cos(a), y = ry * Math.sin(a); out.push([cx + x * c - y * s, cy + x * s + y * c]); }
+  return out;
+}
+// Une segmentos abiertos (LINE/ARC…) en contornos cerrados
+function chainSegments(segs, tol = 0.05) {
+  const loops = []; let open = 0;
+  const rest = segs.map(s => s.slice());
+  while (rest.length) {
+    let cur = rest.pop();
+    for (let grow = true; grow;) {
+      grow = false;
+      const end = cur[cur.length - 1];
+      if (cur.length > 2 && Math.hypot(end[0] - cur[0][0], end[1] - cur[0][1]) < tol) break;
+      for (let i = 0; i < rest.length; i++) {
+        const s = rest[i], a = s[0], b = s[s.length - 1];
+        if (Math.hypot(a[0] - end[0], a[1] - end[1]) < tol) { cur = cur.concat(s.slice(1)); rest.splice(i, 1); grow = true; break; }
+        if (Math.hypot(b[0] - end[0], b[1] - end[1]) < tol) { cur = cur.concat(s.slice(0, -1).reverse()); rest.splice(i, 1); grow = true; break; }
+      }
+    }
+    const e = cur[cur.length - 1];
+    if (cur.length > 2 && Math.hypot(e[0] - cur[0][0], e[1] - cur[0][1]) < tol) loops.push(cur.slice(0, -1)); else open++;
+  }
+  return { loops, open };
+}
+const REF_LAYER = /^(CONTORNO|ZONA_UTIL|REFERENCIA|VENTILADOR|NO_CORTAR)$/i;
+
+// Lee un DXF (texto). Devuelve { polys (mm, Y hacia arriba), contour: bbox de la capa CONTORNO o null, open }
+export function parseDXF(txt) {
+  const L = txt.split(/\r?\n/), pairs = [];
+  for (let i = 0; i + 1 < L.length; i += 2) pairs.push([+L[i].trim(), L[i + 1].trim()]);
+  let scale = 1;
+  for (let i = 0; i < pairs.length - 1; i++) if (pairs[i][0] === 9 && pairs[i][1] === '$INSUNITS') {
+    const u = +pairs[i + 1][1]; scale = { 1: 25.4, 2: 304.8, 5: 10, 6: 1000 }[u] || 1;
+  }
+  let i0 = pairs.findIndex(p => p[0] === 2 && p[1] === 'ENTITIES');
+  const ents = []; let cur = null;
+  for (let i = i0 < 0 ? 0 : i0 + 1; i < pairs.length; i++) {
+    const [c, v] = pairs[i];
+    if (c === 0) { if (cur) ents.push(cur); if (v === 'ENDSEC' || v === 'EOF') { cur = null; break; } cur = { type: v, g: [] }; }
+    else if (cur) cur.g.push([c, v]);
+  }
+  if (cur) ents.push(cur);
+  const loops = [], segs = []; let contour = null, poly = null;
+  const take = (pts, closed, layer) => {
+    if (!pts || pts.length < 2) return;
+    pts = pts.map(([x, y]) => [x * scale, y * scale]);
+    if (/^CONTORNO$/i.test(layer)) { const b = polysBBox([pts]); if (!contour || b.w * b.h > contour.w * contour.h) contour = b; return; }
+    if (REF_LAYER.test(layer)) return;
+    (closed ? loops : segs).push(pts);
+  };
+  for (const e of ents) {
+    const get = (c) => { const r = e.g.find(x => x[0] === c); return r ? +r[1] : undefined; };
+    const layer = (e.g.find(x => x[0] === 8) || [])[1] || '';
+    const T = e.type;
+    if (T === 'POLYLINE') { poly = { pts: [], closed: ((get(70) || 0) & 1) === 1, layer }; continue; }
+    if (T === 'VERTEX' && poly) { poly.pts.push([get(10) || 0, get(20) || 0, get(42) || 0]); continue; }
+    if (T === 'SEQEND' && poly) { take(bulgeExpand(poly.pts, poly.closed), poly.closed, poly.layer); poly = null; continue; }
+    if (T === 'LWPOLYLINE') {
+      const pts = []; let last = null;
+      for (const [c, v] of e.g) { if (c === 10) { last = [+v, 0, 0]; pts.push(last); } else if (c === 20 && last) last[1] = +v; else if (c === 42 && last) last[2] = +v; }
+      const closed = ((get(70) || 0) & 1) === 1;
+      take(bulgeExpand(pts, closed), closed, layer);
+    } else if (T === 'CIRCLE') {
+      const r = get(40); take(arcSample(get(10), get(20), r, r, 0, 0, 2 * Math.PI).slice(0, -1), true, layer);
+    } else if (T === 'ARC') {
+      const r = get(40), a0 = get(50) * Math.PI / 180; let a1 = get(51) * Math.PI / 180; if (a1 <= a0) a1 += 2 * Math.PI;
+      take(arcSample(get(10), get(20), r, r, 0, a0, a1), false, layer);
+    } else if (T === 'ELLIPSE') {
+      const mx = get(11), my = get(21), rx = Math.hypot(mx, my), a0 = get(41) ?? 0, a1 = get(42) ?? 2 * Math.PI;
+      const full = Math.abs(a1 - a0 - 2 * Math.PI) < 1e-3;
+      const pts = arcSample(get(10), get(20), rx, rx * get(40), Math.atan2(my, mx), a0, a1 < a0 ? a1 + 2 * Math.PI : a1);
+      take(full ? pts.slice(0, -1) : pts, full, layer);
+    } else if (T === 'LINE') {
+      take([[get(10), get(20)], [get(11), get(21)]], false, layer);
+    } else if (T === 'SPLINE') {
+      const fit = [], ctl = []; let last = null, lastF = null;
+      for (const [c, v] of e.g) {
+        if (c === 10) { last = [+v, 0]; ctl.push(last); } else if (c === 20 && last) last[1] = +v;
+        else if (c === 11) { lastF = [+v, 0]; fit.push(lastF); } else if (c === 21 && lastF) lastF[1] = +v;
+      }
+      const closed = ((get(70) || 0) & 1) === 1;
+      take(fit.length >= 2 ? fit : ctl, closed, layer);
+    }
+  }
+  const ch = chainSegments(segs);
+  return { polys: [...loops, ...ch.loops], contour, open: ch.open };
+}
+
+// Plantilla de una tapa para dibujar en CAD: contorno, zona útil y referencias + el diseño actual
+export function panelTemplate(p, g) {
+  const { Lw, Lh } = panelDims(p, g), sa = safeArea(p, g);
+  const ref = [];   // círculos de referencia [x,y,d]
+  if (p.side === 'front' || p.side === 'rear') { for (let u = 0; u < p.nu; u++) for (const hz of g.HOLE_Z) for (const x of [g.HOLE_X, Lw - g.HOLE_X]) ref.push([x, u * U + hz, g.M6_D]); }
+  else if (p.side === 'left' || p.side === 'right') { for (const z of sideBoltZ(p.nu)) for (const a of [g.BOLT_Y, Lw - g.BOLT_Y]) ref.push([a, z, 4.4]); }
+  const fans = p.shapes.filter(s => s.t === 'fan');
+  const cuts = [];   // polígonos del diseño actual (sin ventiladores)
+  for (const s of p.shapes) if (s.t !== 'fan') for (const q of prims(s)) {
+    if (q.k === 'c') cuts.push(arcSample(q.x, q.y, q.d / 2, q.d / 2, 0, 0, 2 * Math.PI).slice(0, -1));
+    else if (q.k === 'r') cuts.push(rrectPts(q));
+    else if (q.k === 'p') cuts.push(q.pts);
+    else if (q.k === 'g') cuts.push(...q.polys);
+  }
+  return { Lw, Lh, sa, ref, fans, cuts };
+}
+function rrectPts(q) {
+  const r = Math.max(0, Math.min(q.r || 0, q.w / 2, q.h / 2)), x0 = q.x - q.w / 2, x1 = q.x + q.w / 2, y0 = q.y - q.h / 2, y1 = q.y + q.h / 2;
+  if (r < 0.05) return [[x0, y0], [x1, y0], [x1, y1], [x0, y1]];
+  const out = [];
+  for (const [cx, cy, a] of [[x1 - r, y0 + r, -Math.PI / 2], [x1 - r, y1 - r, 0], [x0 + r, y1 - r, Math.PI / 2], [x0 + r, y0 + r, Math.PI]])
+    out.push(...arcSample(cx, cy, r, r, 0, a, a + Math.PI / 2));
+  return out;
+}
+export function templateDXF(t, name) {
+  const o = ['0', 'SECTION', '2', 'HEADER', '9', '$ACADVER', '1', 'AC1009', '9', '$INSUNITS', '70', '4', '0', 'ENDSEC', '0', 'SECTION', '2', 'ENTITIES'];
+  const f = (v) => (Math.round(v * 1000) / 1000).toString();
+  const pl = (pts, layer) => { o.push('0', 'POLYLINE', '8', layer, '66', '1', '70', '1'); for (const [x, y] of pts) o.push('0', 'VERTEX', '8', layer, '10', f(x), '20', f(y)); o.push('0', 'SEQEND', '8', layer); };
+  const ci = (x, y, d, layer) => o.push('0', 'CIRCLE', '8', layer, '10', f(x), '20', f(y), '40', f(d / 2));
+  pl([[0, 0], [t.Lw, 0], [t.Lw, t.Lh], [0, t.Lh]], 'CONTORNO');
+  pl([[t.sa.a0, t.sa.b0], [t.sa.a1, t.sa.b0], [t.sa.a1, t.sa.b1], [t.sa.a0, t.sa.b1]], 'ZONA_UTIL');
+  for (const [x, y, d] of t.ref) ci(x, y, d, 'REFERENCIA');
+  for (const s of t.fans) { ci(s.x, s.y, s.s, 'VENTILADOR'); pl([[s.x - s.s / 2, s.y - s.s / 2], [s.x + s.s / 2, s.y - s.s / 2], [s.x + s.s / 2, s.y + s.s / 2], [s.x - s.s / 2, s.y + s.s / 2]], 'VENTILADOR'); }
+  for (const P of t.cuts) pl(P, 'CORTE');
+  o.push('0', 'ENDSEC', '0', 'EOF');
+  return o.join('\n') + '\n';
+}
+export function templateSVG(t, name) {
+  const Y = (y) => (Math.round((t.Lh - y) * 1000) / 1000);
+  const X = (x) => Math.round(x * 1000) / 1000;
+  const path = (P) => 'M' + P.map(([x, y]) => `${X(x)},${Y(y)}`).join('L') + 'Z';
+  const sa = t.sa;
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<!-- ${name}: medidas en mm. Dibuja tus recortes en el grupo "corte" (rellenos, contornos cerrados). Lo que esté en "no-cortar" es solo referencia. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="${X(t.Lw)}mm" height="${X(t.Lh)}mm" viewBox="0 0 ${X(t.Lw)} ${X(t.Lh)}">
+  <g id="no-cortar" fill="none" stroke-width="0.3">
+    <rect id="contorno" x="0" y="0" width="${X(t.Lw)}" height="${X(t.Lh)}" stroke="#000"/>
+    <rect id="zona-util" x="${X(sa.a0)}" y="${Y(sa.b1)}" width="${X(sa.a1 - sa.a0)}" height="${X(sa.b1 - sa.b0)}" stroke="#d2601a" stroke-dasharray="2 1.5"/>
+${t.ref.map(([x, y, d]) => `    <circle cx="${X(x)}" cy="${Y(y)}" r="${X(d / 2)}" stroke="#888"/>`).join('\n')}
+${t.fans.map(s => `    <circle cx="${X(s.x)}" cy="${Y(s.y)}" r="${X(s.s / 2)}" stroke="#1f7ae0"/>`).join('\n')}
+  </g>
+  <g id="corte" fill="#222" fill-rule="evenodd">
+${t.cuts.map(P => `    <path d="${path(P)}"/>`).join('\n')}
+  </g>
+</svg>
+`;
 }
