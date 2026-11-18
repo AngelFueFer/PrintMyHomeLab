@@ -163,15 +163,11 @@ function renderControls() {
   $('showDevices').checked = cfg.showDevices !== false; $('showRails').checked = cfg.showRails !== false;
   $('dims').innerHTML = `<span><b>${g.NU}U</b></span><span>ancho <b>${fmt(g.W, 1)}</b></span><span>fondo <b>${fmt(g.D + 2 * g.FT)}</b></span><span>alto <b>${fmt(g.H + 12)}</b> mm</span>`;
 
-  // raíles
-  const railMm = fmt(g.NU * U, 1);
-  if (cfg.rails === 'metal') {
-    $('railInfo').innerHTML = `<p>4 raíles en L de <b>${g.NU}U (${railMm} mm)</b>, ala frontal de 15,8 mm y lateral de 20 mm, agujero cuadrado para tuerca enjaulada M6. Si son más largos, córtalos a ${railMm} mm.</p>
-      <p class="sub">Dónde comprarlos:</p><ul class="links">${RAIL_SHOPS.map(s => `<li><a href="${s.url}" target="_blank" rel="noopener">${esc(s.name)}</a></li>`).join('')}</ul>`;
-  } else {
+  // raíles: solo el selector (la info de compra está en el README del repo)
+  if (cfg.rails === 'metal') $('railInfo').innerHTML = '';
+  else {
     const segs = railSegments({ ...cfg, bed: effBed() }, g);
-    $('railInfo').innerHTML = `<p>Se imprimen 4 raíles en L de 5 mm de grosor, en ${segs.length} tramo${segs.length > 1 ? 's' : ''} (${segs.map(n => n + 'U').join(' + ')}) unidos con espigas de 3 mm. Llevan insertos roscados M5 para las tapas y M4 para los laterales.</p>
-      <p class="sub">Imprime en PETG o ASA con 5 perímetros. Para un rack cargado, mejor raíles metálicos.</p>`;
+    $('railInfo').innerHTML = `<p class="sub">${segs.length} tramo${segs.length > 1 ? 's' : ''} por raíl (${segs.map(n => n + 'U').join(' + ')}), con insertos M5/M4 y espigas de 3 mm.</p>`;
   }
 
   // tapas
@@ -892,7 +888,6 @@ function readme() {
   for (const row of pieceRows()) if (row.pc) lines.push(`  ${row.p.inst.length} × ${row.pc.id}.stl  (${row.pc.size.map(v => fmt(v)).join(' × ')} mm)${row.pc.fits ? '' : '  ¡NO CABE EN LA CAMA!'}`);
   lines.push('', 'TORNILLERÍA');
   for (const [t, n] of hardware(cfg, g, current.parts)) lines.push(`  ${n} × ${t}`);
-  if (cfg.rails === 'metal') { lines.push('', 'DÓNDE COMPRAR RAÍLES'); for (const s of RAIL_SHOPS) lines.push(`  ${s.name}: ${s.url}`); }
   lines.push('', 'NOTAS',
     '  - Los STL ya vienen orientados para imprimir (cara exterior abajo en las tapas).',
     '  - Las piezas partidas encajan con colas de milano: limpia, prueba en seco y pega con CA o epoxi.',

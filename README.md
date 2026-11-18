@@ -16,6 +16,21 @@ Lo ves en 3D, pones ventiladores con un clic sobre cualquier tapa y descargas un
 - Las piezas más grandes que la cama de la impresora se parten solas con colas de milano.
 - La configuración se guarda en el navegador y va dentro del ZIP (`configuracion.json`).
 
+## Raíles de esquina
+
+### Metálicos (recomendado)
+4 raíles en L de la altura del rack: **14U = 622,3 mm** (1U = 44,45 mm). Ala frontal de 15,8 mm y ala lateral de 20 mm, con agujero cuadrado para tuerca enjaulada M6. Si los compras más largos, córtalos a la medida.
+
+Dónde comprarlos:
+- [Penn Elcom R0883-2mm-14](https://penn-elcom.com/mx/14u-full-hole-double-rack-rail-with-square-holes-2mm-thick-r0883-2mm-14): raíl doble de 14U, agujero cuadrado, 2 mm de grosor.
+- [Hammond CLSR](https://www.hammfg.com/product/clsr): raíl de montaje con agujero cuadrado, en varias alturas.
+- [DeskPi RackMate T1 / T2](https://deskpi.com/products/deskpi-rackmate-t1-2): rack metálico de 10″ completo, si prefieres no imprimir la estructura.
+
+Además: tuercas enjauladas M6 con tornillos M6×12 (4 por tapa frontal o trasera). Para los laterales, taladra el ala lateral del raíl a 4,5 mm y usa M4×10 con tuerca. La web calcula las cantidades en «Tornillería y material aparte».
+
+### Impresos
+La web genera los raíles en L de 5 mm, partidos en tramos que caben en tu cama y unidos con espigas de acero de 3 mm. Llevan insertos roscados M5 (Ø6,4) para las tapas y M4 (Ø5,6) para los laterales. Imprímelos en PETG o ASA con 5 perímetros. Para un rack cargado, mejor metálicos.
+
 ## Código
 | Archivo | Qué hace |
 |---|---|
