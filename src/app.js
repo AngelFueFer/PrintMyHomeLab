@@ -552,6 +552,13 @@ let toastT = 0;
 function toast(t) { const el = $('toast'); el.textContent = t; el.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => { el.hidden = true; }, 3200); }
 
 // ------------------------------------------------------------------ arranque
+function setFold(folded) {
+  document.querySelector('.main').classList.toggle('folded', folded);
+  $('fold').setAttribute('aria-expanded', String(!folded));
+  try { localStorage.setItem('rack-parts-folded', folded ? '1' : '0'); } catch (e) {}
+}
+$('fold').addEventListener('click', () => setFold($('fold').getAttribute('aria-expanded') === 'true'));
+try { if (localStorage.getItem('rack-parts-folded') === '1') setFold(true); } catch (e) {}
 initControls();
 renderControls();
 applyTheme();
