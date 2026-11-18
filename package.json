@@ -1,0 +1,7 @@
+{
+  "name": "printmyhomelab",
+  "private": true,
+  "type": "module",
+  "scripts": { "build": "node build.mjs" },
+  "devDependencies": { "manifold-3d": "3.3.2" }
+}

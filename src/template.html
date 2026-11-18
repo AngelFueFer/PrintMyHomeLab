@@ -1,0 +1,223 @@
+<title>PrintMyHomeLab</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: banco de trabajo — columna de ajustes a la izquierda, visor 3D y lista de impresión a la derecha */
+:root {
+  --bg: #eef0f2; --panel: #ffffff; --panel-2: #f6f7f8; --line: #d8dce1; --fg: #1d2329; --muted: #5d6873;
+  --accent: #d2601a; --accent-fg: #ffffff; --accent-soft: #fbe6d6; --ok: #2f7d4f; --warn: #b26a00; --bad: #b3261e;
+  --view: #e4e7ea; --font-display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #121519; --panel: #1a1e23; --panel-2: #20252b; --line: #2e353d; --fg: #e6e9ec; --muted: #9aa5b0;
+  --accent: #f08a45; --accent-fg: #1a0f07; --accent-soft: #3a2516; --ok: #5cc28a; --warn: #f0b04a; --bad: #ff8a80; --view: #171b20; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #121519; --panel: #1a1e23; --panel-2: #20252b; --line: #2e353d; --fg: #e6e9ec; --muted: #9aa5b0;
+  --accent: #f08a45; --accent-fg: #1a0f07; --accent-soft: #3a2516; --ok: #5cc28a; --warn: #f0b04a; --bad: #ff8a80; --view: #171b20; color-scheme: dark }
+html, body { height: 100%; }
+body { background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 14px; line-height: 1.45; }
+* { box-sizing: border-box; }
+button, input, select { font: inherit; color: inherit; }
+.app { display: grid; grid-template-columns: 372px minmax(0, 1fr); height: 100%; min-height: 0; }
+.side { border-right: 1px solid var(--line); background: var(--panel); overflow-y: auto; min-height: 0;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: 16px; padding-block: 18px 32px; display: flex; flex-direction: column; gap: 22px; }
+.main { display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(260px, 1fr) minmax(0, 42%); min-width: 0; min-height: 0;
+  padding-right: max(0px, env(safe-area-inset-right, 0px)); }
+h1 { font-family: var(--font-display); font-weight: 800; font-size: 22px; letter-spacing: -0.01em; margin: 0; text-wrap: balance; }
+.brand { display: flex; flex-direction: column; gap: 4px; }
+.brand p { margin: 0; color: var(--muted); font-size: 13px; }
+.dims { font-family: var(--font-mono); font-size: 12.5px; display: flex; flex-wrap: wrap; gap: 6px 14px; padding: 10px 12px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 6px; }
+.dims b { font-weight: 500; color: var(--accent); }
+section h2 { font-family: var(--font-display); font-size: 12px; text-transform: uppercase; letter-spacing: 0.09em; color: var(--muted); margin: 0 0 10px; font-weight: 700; }
+.field { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 6px 10px; margin-bottom: 10px; }
+.field label { font-size: 13px; }
+.field small { grid-column: 1 / -1; color: var(--muted); font-size: 12px; margin-top: -4px; }
+input[type=number], input[type=text], select { background: var(--panel-2); border: 1px solid var(--line); border-radius: 5px; padding: 5px 7px; min-width: 0; }
+input[type=number] { width: 78px; font-family: var(--font-mono); font-size: 13px; text-align: right; }
+input[type=range] { width: 100%; accent-color: var(--accent); grid-column: 1 / -1; }
+input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; background: var(--panel-2); }
+.seg button { border: 0; background: transparent; padding: 5px 12px; cursor: pointer; font-size: 13px; }
+.seg button[aria-pressed=true] { background: var(--accent); color: var(--accent-fg); font-weight: 600; }
+.btn { border: 1px solid var(--line); background: var(--panel-2); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 13px; }
+.btn:hover { border-color: var(--accent); }
+.btn.primary { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); font-weight: 600; }
+.btn:disabled { opacity: .5; cursor: progress; }
+.icon { width: 28px; height: 28px; padding: 0; display: inline-grid; place-items: center; border: 1px solid var(--line); background: var(--panel); border-radius: 5px; cursor: pointer; font-size: 13px; color: var(--muted); }
+.icon:hover { color: var(--fg); border-color: var(--accent); }
+.icon:disabled { opacity: .35; cursor: default; }
+/* pila de módulos */
+.stack { display: flex; flex-direction: column; gap: 8px; }
+.mod { border: 1px solid var(--line); border-radius: 7px; background: var(--panel-2); display: grid; grid-template-columns: 54px minmax(0, 1fr); overflow: hidden; }
+.mod .u { background: var(--accent-soft); color: var(--accent); font-family: var(--font-mono); font-size: 12px; font-weight: 500; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; border-right: 1px solid var(--line); padding: 6px 2px; text-align: center; }
+.mod .u span { font-size: 10.5px; color: var(--muted); }
+.mod .body { padding: 8px 10px; display: flex; flex-direction: column; gap: 7px; min-width: 0; }
+.mod .top { display: flex; align-items: center; gap: 6px; }
+.mod .top strong { font-weight: 600; font-size: 13.5px; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mod .row { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; font-size: 12.5px; color: var(--muted); }
+.mod .row label { display: inline-flex; align-items: center; gap: 5px; }
+.mod .row input[type=number] { width: 60px; padding: 3px 5px; }
+.mod .row input[type=text] { width: 100%; padding: 3px 6px; }
+.mod .free { color: var(--muted); }
+.addrow { display: flex; gap: 6px; }
+.addrow select { flex: 1; }
+.free-u { border: 1px dashed var(--line); border-radius: 7px; padding: 8px 10px; color: var(--muted); font-size: 12.5px; font-family: var(--font-mono); }
+.fantool { display: inline-flex; gap: 6px; align-items: center; }
+#fanBtn[aria-pressed=true] { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); font-weight: 600; }
+.viewer.placing { box-shadow: inset 0 0 0 2px var(--accent); }
+.viewer.placing .hint { color: var(--fg); background: var(--panel); padding: 4px 8px; border-radius: 5px; border: 1px solid var(--line); right: 12px; }
+.fanlist { display: flex; flex-direction: column; gap: 6px; }
+.fanrow { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 8px; align-items: center; font-size: 12.5px; padding: 5px 6px 5px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel-2); }
+.warns { display: flex; flex-direction: column; gap: 6px; }
+.warn { border-left: 3px solid var(--warn); background: var(--panel-2); padding: 7px 10px; font-size: 12.5px; border-radius: 0 5px 5px 0; }
+/* visor */
+.toolbar { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; padding: 10px 16px; border-bottom: 1px solid var(--line); background: var(--panel); }
+.toolbar .chk { display: inline-flex; gap: 6px; align-items: center; font-size: 13px; cursor: pointer; }
+.toolbar .status { margin-left: auto; font-family: var(--font-mono); font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 8px; }
+.bar { width: 90px; height: 5px; border-radius: 3px; background: var(--line); overflow: hidden; }
+.bar i { display: block; height: 100%; background: var(--accent); width: 0; transition: width .15s; }
+.viewer { position: relative; background: var(--view); min-height: 0; overflow: hidden; }
+.viewer canvas { display: block; width: 100%; height: 100%; max-width: 100%; touch-action: none; position: absolute; inset: 0; }
+.viewer .hint { position: absolute; left: 12px; bottom: 10px; font-size: 11.5px; color: var(--muted); pointer-events: none; }
+.viewer .sel { position: absolute; right: 12px; top: 10px; max-width: 60%; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; font-size: 12.5px; }
+.viewer .sel b { font-family: var(--font-mono); font-weight: 500; }
+/* lista de piezas */
+.parts { border-top: 1px solid var(--line); background: var(--panel); display: flex; flex-direction: column; min-height: 0; }
+.parts .head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; padding: 10px 16px; border-bottom: 1px solid var(--line); }
+.parts .head .sum { font-size: 13px; color: var(--muted); }
+.parts .head .sum b { color: var(--fg); font-weight: 600; font-variant-numeric: tabular-nums; }
+.parts .head .grow { flex: 1; }
+.tablewrap { overflow: auto; min-height: 0; }
+table { border-collapse: collapse; width: 100%; font-size: 13px; }
+th { text-align: left; font-weight: 600; color: var(--muted); font-size: 11.5px; text-transform: uppercase; letter-spacing: .06em; padding: 7px 10px; position: sticky; top: 0; background: var(--panel); border-bottom: 1px solid var(--line); z-index: 1; }
+td { padding: 6px 10px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+td.num, th.num { text-align: right; font-family: var(--font-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+tr.grp td { background: var(--panel-2); font-family: var(--font-display); font-weight: 700; font-size: 12px; letter-spacing: .03em; color: var(--muted); padding-top: 9px; }
+tr.piece { cursor: pointer; }
+tr.piece:hover td { background: var(--panel-2); }
+tr.piece.on td { background: var(--accent-soft); }
+.sw { width: 10px; height: 10px; border-radius: 2px; display: inline-block; margin-right: 8px; vertical-align: -1px; }
+.pill { font-size: 11px; padding: 1px 7px; border-radius: 10px; border: 1px solid currentColor; white-space: nowrap; font-family: var(--font-mono); }
+.pill.ok { color: var(--ok); } .pill.bad { color: var(--bad); } .pill.cut { color: var(--warn); }
+.sub { color: var(--muted); font-size: 12px; }
+.hwlist { padding: 10px 16px 16px; font-size: 12.5px; color: var(--muted); }
+.hwlist summary { cursor: pointer; color: var(--fg); font-weight: 600; font-size: 13px; }
+.hwlist ul { margin: 8px 0 0; padding-left: 18px; columns: 2; column-gap: 28px; }
+.hwlist li { break-inside: avoid; margin-bottom: 3px; }
+.hwlist li b { font-family: var(--font-mono); color: var(--fg); font-weight: 500; }
+.toast { position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--fg); color: var(--bg); padding: 8px 14px; border-radius: 6px; font-size: 13px; z-index: 20; max-width: calc(100% - 32px); }
+.err { padding: 14px 16px; color: var(--bad); }
+@media (max-width: 860px) {
+  html, body { height: auto; }
+  .app { grid-template-columns: minmax(0, 1fr); height: auto; }
+  .main { order: -1; grid-template-rows: auto 58vh auto; padding-left: 0; }
+  .side { border-right: 0; border-top: 1px solid var(--line); overflow: visible; padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  .toolbar, .parts .head { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  .tablewrap { max-height: 60vh; }
+  .hwlist ul { columns: 1; }
+  .viewer .sel { max-width: calc(100% - 24px); }
+}
+@media (prefers-reduced-motion: reduce) { .bar i { transition: none; } }
+</style>
+
+<div class="app">
+  <aside class="side" id="side">
+    <div class="brand">
+      <h1>PrintMyHomeLab</h1>
+      <p>Mini-rack impreso con raíles metálicos. Ajusta medidas y módulos, revisa en 3D y descarga los STL ya partidos para tu impresora.</p>
+    </div>
+    <div class="dims" id="dims"></div>
+
+    <section>
+      <h2>Rack</h2>
+      <div class="field"><label>Estándar</label>
+        <div class="seg" id="std"><button type="button" data-v="10" aria-pressed="true">10″</button><button type="button" data-v="19" aria-pressed="false">19″</button></div>
+      </div>
+      <div class="field"><label for="depth">Fondo (mm)</label><input type="number" id="depth" min="180" max="450" step="5">
+        <input type="range" id="depthR" min="180" max="450" step="5" aria-label="Fondo">
+      </div>
+      <div class="field"><label for="extraU">U libres arriba</label><input type="number" id="extraU" min="0" max="12" step="1">
+        <small>Hueco de reserva para crecer. Sube la altura sin añadir piezas de módulo.</small></div>
+      <div class="field"><label for="wall">Grosor de pared lateral (mm)</label><input type="number" id="wall" min="2.4" max="5" step="0.2"></div>
+      <div class="field"><label for="faceT">Grosor de frontales (mm)</label><input type="number" id="faceT" min="3" max="6" step="0.5"></div>
+    </section>
+
+    <section>
+      <h2>Módulos, de arriba abajo</h2>
+      <div class="stack" id="stack"></div>
+      <div class="addrow" style="margin-top:10px">
+        <select id="addType" aria-label="Tipo de módulo"></select>
+        <button type="button" class="btn" id="addBtn">Añadir arriba</button>
+      </div>
+    </section>
+
+    <section>
+      <h2>Ventiladores extra</h2>
+      <div class="fanlist" id="fanList"></div>
+      <button type="button" class="btn" id="fanClear" style="margin-top:8px" hidden>Quitar todos</button>
+    </section>
+
+    <section>
+      <h2>Impresora</h2>
+      <div class="field"><label for="preset">Modelo</label><select id="preset"></select></div>
+      <div class="field"><label>Cama X × Y × Z (mm)</label>
+        <span style="display:flex;gap:4px"><input type="number" id="bedX" min="120" max="600" aria-label="Cama X"><input type="number" id="bedY" min="120" max="600" aria-label="Cama Y"><input type="number" id="bedZ" min="100" max="600" aria-label="Cama Z"></span>
+        <small>Las piezas más grandes que la cama se parten solas con colas de milano. Pega las uniones con cianoacrilato o epoxi.</small>
+      </div>
+    </section>
+
+    <section id="warnSec" hidden>
+      <h2>Revisar</h2>
+      <div class="warns" id="warns"></div>
+    </section>
+
+    <section>
+      <button type="button" class="btn" id="reset">Volver al diseño de Angel</button>
+    </section>
+  </aside>
+
+  <main class="main">
+    <div class="toolbar">
+      <div class="seg" id="view">
+        <button type="button" data-v="asm" aria-pressed="true">Montaje</button>
+        <button type="button" data-v="exp" aria-pressed="false">Despiece</button>
+        <button type="button" data-v="bed" aria-pressed="false">En la cama</button>
+      </div>
+      <span class="fantool"><button type="button" class="btn" id="fanBtn" aria-pressed="false">＋ Ventilador</button>
+        <select id="fanSize" aria-label="Tamaño del ventilador"><option value="40">40 mm</option><option value="60">60 mm</option><option value="80" selected>80 mm</option><option value="92">92 mm</option><option value="120">120 mm</option><option value="140">140 mm</option></select></span>
+      <label class="chk"><input type="checkbox" id="showDevices"> Equipos</label>
+      <label class="chk"><input type="checkbox" id="showRails"> Raíles</label>
+      <div class="status"><span id="status">Cargando motor 3D…</span><span class="bar"><i id="barI"></i></span></div>
+    </div>
+    <div class="viewer" id="viewer">
+      <div class="sel" id="selBox" hidden></div>
+      <div class="hint" id="hint">Arrastra para girar · rueda o pellizco para zoom · clic en una pieza para seleccionarla</div>
+    </div>
+    <div class="parts">
+      <div class="head">
+        <div class="sum" id="sum">Preparando piezas…</div>
+        <span class="grow"></span>
+        <button type="button" class="btn" id="dlSel" disabled>Descargar seleccionada</button>
+        <button type="button" class="btn primary" id="dlAll" disabled>Descargar todo (.zip)</button>
+      </div>
+      <div class="tablewrap">
+        <table><thead><tr><th>Pieza</th><th class="num">Cant.</th><th class="num">En la cama (mm)</th><th>Cama</th><th class="num">≈ g</th></tr></thead><tbody id="tbody"></tbody></table>
+        <details class="hwlist" id="hw"><summary>Tornillería y material aparte</summary><ul id="hwul"></ul></details>
+      </div>
+    </div>
+  </main>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script type="importmap">{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"
+} }</script>
+<script>window.__MANIFOLD_WASM_B64 = "%%WASM%%";</script>
+<script type="module">
+%%APP%%
+</script>
