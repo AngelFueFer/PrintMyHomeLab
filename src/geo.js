@@ -254,7 +254,7 @@ export function worldToPanel(p, pt, g) {
 }
 export function fanPoses(cfg, g) {
   const out = [];
-  for (const p of cfg.panels || []) for (const s of p.shapes) if (s.t === 'fan') out.push({ ...panelToWorld(p, s.x, s.y, g, 12.5 + (p.side === 'top' ? g.PLATE_T : p.side === 'left' || p.side === 'right' ? g.WALL : g.FT)), s: s.s });
+  for (const p of cfg.panels || []) for (const s of p.shapes) if (s.t === 'fan') out.push({ ...panelToWorld(p, s.x, s.y, g, 12.5 + (p.side === 'top' ? g.PLATE_T : p.side === 'left' || p.side === 'right' ? g.WALL : g.FT)), s: s.s, panelId: p.id, side: p.side });
   return out;
 }
 
@@ -665,6 +665,7 @@ export function mockups(cfg, g) {
   const out = [];
   for (const s of cfg.shelves || []) {
     if (s.u > g.NU) continue;
+    const n0 = out.length;
     const z = g.uz(s.u) + g.TRAY_Z + 3;
     if (s.dev) {
       const y0 = s.type === 'router' ? Math.max(10, Math.min(50, g.D - s.dev[1] - 12)) : Math.max(10, Math.min(30, g.D - s.dev[1] - 12));
@@ -682,6 +683,7 @@ export function mockups(cfg, g) {
       out.push([g.W - g.FL_W - 8 - SFX[2], 12, z, SFX[2], SFX[1], SFX[0], '#5a5f66', 'Fuente SFX']);
       for (let i = 0; i < (s.ssd || 0); i++) out.push([g.W - g.FL_W - 8 - SSD_MOD[0], 130, z + i * SSD_MOD[2], SSD_MOD[0], SSD_MOD[1], SSD_MOD[2] - 0.8, '#8a63c9', 'SSD 2,5"']);
     }
+    for (let i = n0; i < out.length; i++) out[i][8] = s.id;
   }
   return out;
 }

@@ -148,6 +148,11 @@ tr.piece.on td { background: var(--accent-soft); }
 .prow .row select { flex: 1; min-width: 120px; padding: 3px 5px; }
 .row.bad { color: var(--bad); }
 .btn.sm { padding: 3px 9px; font-size: 12.5px; }
+.icon.eye { color: var(--muted); flex: none; }
+.icon.eye.off { color: var(--bad); border-color: var(--bad); }
+.icon.eye.dim:not(.off) { opacity: .45; }
+.h2eye { display: flex; align-items: center; justify-content: space-between; }
+.h2eye .icon { text-transform: none; }
 svg .pf { fill: var(--panel); stroke: var(--muted); stroke-width: 1; vector-effect: non-scaling-stroke; }
 .prev svg .pc * { fill: var(--muted); stroke: none; }
 svg .pc .fanbg, .edcanvas .pc .shp .fanbg, .edcanvas .pc .shp.on .fanbg { fill: var(--panel) !important; fill-opacity: 1 !important; }
@@ -238,7 +243,7 @@ body.modal { overflow: hidden; }
     </section>
 
     <section>
-      <h2>Baldas, de arriba abajo</h2>
+      <h2 class="h2eye">Baldas, de arriba abajo<span id="shelvesEye"></span></h2>
       <div class="stack" id="shelfList"></div>
       <div class="addrow" style="margin-top:10px">
         <select id="addShelfType" aria-label="Tipo de balda"></select>

@@ -151,6 +151,29 @@ function splitPanel(p) {
   toast(`Partida en ${panelLabel(p)} y ${panelLabel(q)}`);
 }
 
+// ---- visibilidad en el 3D (ojo): lados de tapas, tapas sueltas, baldas
+const HIDE_KEY = 'rack-hidden';
+let hiddenSet = new Set();
+try { const h = JSON.parse(localStorage.getItem(HIDE_KEY)); if (Array.isArray(h)) hiddenSet = new Set(h); } catch (e) {}
+function partHidden(p) {
+  return (p.side && hiddenSet.has('side:' + p.side)) || (p.panelId && hiddenSet.has(p.panelId)) || (p.shelfId && (hiddenSet.has(p.shelfId) || hiddenSet.has('shelves')));
+}
+const EYE = '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2"/></svg>';
+const EYE_OFF = '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M3 3l18 18M10.6 5.1A10.6 10.6 0 0 1 12 5c6.4 0 10 7 10 7a17 17 0 0 1-3.2 4.1M6.6 6.6C3.9 8.4 2 12 2 12s3.6 7 10 7c1.7 0 3.2-.5 4.5-1.2M9.9 9.9a3 3 0 0 0 4.2 4.2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+function eyeBtn(key, label, inherited) {
+  const off = hiddenSet.has(key);
+  return `<button type="button" class="icon eye${off ? ' off' : ''}${inherited ? ' dim' : ''}" data-eye="${key}" aria-pressed="${off}" aria-label="${off ? 'Mostrar' : 'Ocultar'} ${esc(label)}" title="${off ? 'Mostrar' : 'Ocultar'} en el 3D">${off ? EYE_OFF : EYE}</button>`;
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest('button[data-eye]'); if (!b) return;
+  e.stopPropagation();
+  const k = b.dataset.eye;
+  hiddenSet.has(k) ? hiddenSet.delete(k) : hiddenSet.add(k);
+  try { localStorage.setItem(HIDE_KEY, JSON.stringify([...hiddenSet])); } catch (err) {}
+  if (selected) { const sp = current.parts.find(x => x.id === selected.partId); if (sp && partHidden(sp)) selected = null; }
+  renderControls(); rebuildScene(); renderParts();
+}, true);
+
 function renderControls() {
   const g = derive(cfg);
   const pressed = (id, v) => $(id).querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === v)));
@@ -182,7 +205,7 @@ function renderControls() {
     const folded = panelFolds.has(side), bad = list.some(p => clash.has(p.id));
     const info = side === 'top' ? (list.length ? '' : 'sin tapa') : `${list.length} tapa${list.length === 1 ? '' : 's'} · ${Math.min(cover[side], need)}/${need}U`;
     const strip = folded && side !== 'top' ? `<button type="button" class="pstrip" data-fold="${side}" aria-label="Ver las tapas del ${SIDES[side].toLowerCase()}">${list.map(p => `<span class="${clash.has(p.id) ? 'bad' : ''}" title="${esc(panelLabel(p))}">${miniSvg(p, g)}</span>`).join('')}</button>` : '';
-    html += `<div class="pgroup${folded ? ' folded' : ''}"><div class="pghead"><button type="button" class="pgbtn" data-fold="${side}" aria-expanded="${!folded}"><span class="chev" aria-hidden="true">▾</span>${SIDES[side]}${bad ? ' <span class="badtxt">· se pisan</span>' : ''}</button><span>${info}</span>
+    html += `<div class="pgroup${folded ? ' folded' : ''}"><div class="pghead"><button type="button" class="pgbtn" data-fold="${side}" aria-expanded="${!folded}"><span class="chev" aria-hidden="true">▾</span>${SIDES[side]}${bad ? ' <span class="badtxt">· se pisan</span>' : ''}</button><span>${info}</span>${eyeBtn('side:' + side, SIDES[side])}
       ${!folded && list.length > 1 && side !== 'top' ? `<button type="button" class="btn sm" data-joinall="${side}">Unir todas</button>` : ''}</div>${strip}`;
     if (folded) { html += '</div>'; continue; }
     for (const p of list) {
@@ -192,7 +215,7 @@ function renderControls() {
       html += `<div class="prow${clash.has(p.id) ? ' clash' : ''}" data-pid="${p.id}">
         <div class="prev" aria-hidden="true">${miniSvg(p, g)}</div>
         <div class="pbody"><div class="top"><strong>${esc(panelLabel(p))}</strong>
-          <button type="button" class="btn sm" data-act="edit">Diseñar</button>
+          ${eyeBtn(p.id, panelLabel(p), hiddenSet.has('side:' + side))}<button type="button" class="btn sm" data-act="edit">Diseñar</button>
           <button type="button" class="icon" data-act="del" aria-label="Quitar tapa">✕</button></div>
           <div class="row">${range}<select data-f="tpl" aria-label="Plantilla">${tplOpts}</select></div>
           ${side !== 'top' && (upperOf(p) || p.nu > 1) ? `<div class="row">${upperOf(p) ? `<button type="button" class="btn sm" data-act="join">Unir con la de arriba</button>` : ''}${p.nu > 1 ? `<button type="button" class="btn sm" data-act="split">Partir en dos</button>` : ''}</div>` : ''}
@@ -215,12 +238,13 @@ function renderControls() {
       <div class="row"><span>Equipo (mm)</span><label>an <input type="number" data-f="dev0" min="10" max="600" value="${s.dev[0]}"></label><label>fo <input type="number" data-f="dev1" min="10" max="600" value="${s.dev[1]}"></label><label>al <input type="number" data-f="dev2" min="5" max="400" value="${s.dev[2]}"></label></div>`;
     const covered = cfg.panels.some(p => p.side === 'front' && s.u >= p.u0 && s.u < p.u0 + p.nu) && cfg.panels.some(p => p.side === 'rear' && s.u >= p.u0 && s.u < p.u0 + p.nu);
     sh += `<div class="mod" data-sid="${s.id}"><div class="u">U${s.u}<span>${span}U</span></div><div class="body">
-      <div class="top"><strong>${esc(s.dev && s.label ? s.label : T.name)}</strong><button type="button" class="icon" data-act="del" aria-label="Quitar balda">✕</button></div>
+      <div class="top"><strong>${esc(s.dev && s.label ? s.label : T.name)}</strong>${eyeBtn(s.id, s.label || T.name, hiddenSet.has('shelves'))}<button type="button" class="icon" data-act="del" aria-label="Quitar balda">✕</button></div>
       <div class="row">${rows}</div>${extra}
       ${covered ? '' : '<div class="row bad">Falta tapa frontal o trasera en esta U para atornillar la bandeja</div>'}</div></div>`;
   }
   if (!shelves.length) sh = '<div class="free-u">Sin baldas. Añade una abajo.</div>';
   $('shelfList').innerHTML = sh;
+  $('shelvesEye').innerHTML = eyeBtn('shelves', 'todas las baldas');
 }
 
 // Miniatura del diseño de una tapa
@@ -408,6 +432,7 @@ function explodeOffset(p, inst) {
 function addPartToScene(p) {
   const r = current.results.get(p.id); if (!r) return;
   for (const old of partGroup.children.filter(o => o.userData.partId === p.id)) partGroup.remove(old);
+  if (partHidden(p)) return;
   r.pieces.forEach((pc, k) => {
     const geo = geomFor(pc);
     for (const inst of p.inst) {
@@ -426,11 +451,12 @@ function rebuildScene() {
   partGroup.clear(); mockGroup.clear(); railGroup.clear(); fanGroup.clear();
   const g = current.g; if (!g) return;
   for (const p of current.parts) addPartToScene(p);
-  if (cfg.showDevices !== false) for (const [x, y, z, sx, sy, sz, col] of mockups(cfg, g)) {
+  if (cfg.showDevices !== false) for (const [x, y, z, sx, sy, sz, col, , sid] of mockups(cfg, g)) {
+    if (hiddenSet.has('shelves') || hiddenSet.has(sid)) continue;
     const m = new THREE.Mesh(new THREE.BoxGeometry(sx, sy, sz), mat(col, { transparent: true, opacity: 0.88, roughness: 0.5 }));
     m.position.set(x + sx / 2, y + sy / 2, z + sz / 2 + (viewMode === 'exp' ? zSpread(z) : 0)); mockGroup.add(m);
   }
-  if (viewMode !== 'exp') for (const f of fanPoses(cfg, g)) fanGroup.add(fanMock(f));
+  if (viewMode !== 'exp') for (const f of fanPoses(cfg, g)) if (!hiddenSet.has(f.panelId) && !hiddenSet.has('side:' + f.side)) fanGroup.add(fanMock(f));
   if (cfg.showRails !== false && !g.printed) {
     const L = g.NU * U, mm = mat('#a7adb4', { metalness: 0.55, roughness: 0.35 });
     for (const [mx, my] of [[1, 1], [-1, 1], [1, -1], [-1, -1]]) {
