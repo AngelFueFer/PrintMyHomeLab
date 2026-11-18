@@ -85,7 +85,7 @@ input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px s
 .toolbar { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; padding: 10px 16px; border-bottom: 1px solid var(--line); background: var(--panel); }
 .toolbar .chk { display: inline-flex; gap: 6px; align-items: center; font-size: 13px; cursor: pointer; }
 .toolbar .status { margin-left: auto; font-family: var(--font-mono); font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 8px; }
-.toolbar .status[hidden] { display: none; }
+.toolbar .status { display: none !important; }
 .bar { width: 90px; height: 5px; border-radius: 3px; background: var(--line); overflow: hidden; }
 .bar i { display: block; height: 100%; background: var(--accent); width: 0; transition: width .15s; }
 .viewer { position: relative; background: var(--view); min-height: 0; overflow: hidden; }
@@ -186,10 +186,7 @@ tr.piece.on td { background: var(--accent-soft); }
         <small id="bedEff"></small></div>
     </section>
 
-    <section id="warnSec" hidden>
-      <h2>Revisar</h2>
-      <div class="warns" id="warns"></div>
-    </section>
+    <div id="warnSec" hidden><div id="warns"></div></div>
 
     <section>
       <button type="button" class="btn" id="reset">Volver al diseño de Angel</button>
@@ -207,7 +204,7 @@ tr.piece.on td { background: var(--accent-soft); }
         <select id="fanSize" aria-label="Tamaño del ventilador"><option value="40">40 mm</option><option value="60">60 mm</option><option value="80" selected>80 mm</option><option value="92">92 mm</option><option value="120">120 mm</option><option value="140">140 mm</option></select></span>
       <label class="chk"><input type="checkbox" id="showDevices"> Equipos</label>
       <label class="chk"><input type="checkbox" id="showRails"> Raíles</label>
-      <div class="status"><span id="status">Cargando motor 3D…</span><span class="bar"><i id="barI"></i></span></div>
+      <div class="status" hidden><span id="status">Cargando motor 3D…</span><span class="bar"><i id="barI"></i></span></div>
     </div>
     <div class="viewer" id="viewer">
       <div class="sel" id="selBox" hidden></div>
@@ -1137,7 +1134,7 @@ function renderControls() {
   const w = deviceWarnings(cfg, g);
   if (g.NU !== 14) w.unshift(`El rack mide ${g.NU}U. Tus raíles son de 14U: córtalos a ${fmt(g.NU * U, 1)} mm o usa raíles de ${g.NU}U.`);
   if (cfg.std === '19') w.push('En 19″ casi todas las piezas grandes se parten en trozos. Revisa la lista de impresión.');
-  $('warnSec').hidden = !w.length;
+  $('warnSec').hidden = true;
   $('warns').innerHTML = w.map(t => `<div class="warn">${esc(t)}</div>`).join('');
 }
 const esc = (s) => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));

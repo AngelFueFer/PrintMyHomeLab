@@ -129,7 +129,7 @@ function renderControls() {
   const w = deviceWarnings(cfg, g);
   if (g.NU !== 14) w.unshift(`El rack mide ${g.NU}U. Tus raíles son de 14U: córtalos a ${fmt(g.NU * U, 1)} mm o usa raíles de ${g.NU}U.`);
   if (cfg.std === '19') w.push('En 19″ casi todas las piezas grandes se parten en trozos. Revisa la lista de impresión.');
-  $('warnSec').hidden = !w.length;
+  $('warnSec').hidden = true;
   $('warns').innerHTML = w.map(t => `<div class="warn">${esc(t)}</div>`).join('');
 }
 const esc = (s) => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
