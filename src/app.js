@@ -5,6 +5,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 const PRESETS = {
+  mine: { name: 'Mis impresoras: X1C + Core One (cabe en las dos)', bed: [250, 220, 256] },
   x1c: { name: 'Bambu Lab X1C / P1S / P2S', bed: [256, 256, 256] },
   a1: { name: 'Bambu Lab A1', bed: [256, 256, 256] },
   a1mini: { name: 'Bambu Lab A1 mini', bed: [180, 180, 180] },
@@ -27,7 +28,14 @@ let viewMode = 'asm';
 let runToken = 0;
 
 function load() {
-  try { const s = JSON.parse(localStorage.getItem(STORE)); if (s && s.modules) return { ...defaultConfig(), ...s }; } catch (e) {}
+  try {
+    const s = JSON.parse(localStorage.getItem(STORE));
+    if (s && s.modules) {
+      // configuraciones guardadas antes de existir el margen: pasar a "mis impresoras"
+      if (s.bedMargin === undefined) { s.bed = [250, 220, 256]; s.bedPreset = 'mine'; s.bedMargin = 2; }
+      return { ...defaultConfig(), ...s };
+    }
+  } catch (e) {}
   return defaultConfig();
 }
 function save() { try { localStorage.setItem(STORE, JSON.stringify(cfg)); } catch (e) {} }
@@ -43,6 +51,7 @@ function initControls() {
   $('std').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; cfg.std = b.dataset.v; changed(); });
   $('view').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; setView(b.dataset.v); });
   const num = (id, key, lo, hi) => $(id).addEventListener('change', e => { const v = clamp(+e.target.value, lo, hi); if (!isNaN(v)) { cfg[key] = v; changed(); } });
+  num('bedM', 'bedMargin', 0, 20);
   num('depth', 'depth', 180, 450); num('extraU', 'extraU', 0, 12); num('wall', 'wall', 2.4, 5); num('faceT', 'faceT', 3, 6);
   $('depthR').addEventListener('input', e => { $('depth').value = e.target.value; });
   $('depthR').addEventListener('change', e => { cfg.depth = +e.target.value; changed(); });
@@ -74,6 +83,7 @@ function initControls() {
     changed();
   });
 }
+function effBed() { const m = +(cfg.bedMargin ?? 0) || 0; return [cfg.bed[0] - 2 * m, cfg.bed[1] - 2 * m, cfg.bed[2]]; }
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 
 function renderControls() {
@@ -82,6 +92,8 @@ function renderControls() {
   $('view').querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === viewMode)));
   $('depth').value = cfg.depth; $('depthR').value = cfg.depth; $('extraU').value = cfg.extraU; $('wall').value = cfg.wall; $('faceT').value = cfg.faceT;
   $('preset').value = cfg.bedPreset in PRESETS ? cfg.bedPreset : 'custom';
+  $('bedM').value = cfg.bedMargin ?? 0;
+  const eb = effBed(); $('bedEff').textContent = `Zona útil para las piezas: ${fmt(eb[0])} × ${fmt(eb[1])} × ${fmt(eb[2])} mm`;
   $('bedX').value = cfg.bed[0]; $('bedY').value = cfg.bed[1]; $('bedZ').value = cfg.bed[2];
   $('showDevices').checked = cfg.showDevices !== false; $('showRails').checked = cfg.showRails !== false;
   const outerD = g.D + 2 * g.FT, outerH = g.H + 12;
@@ -146,9 +158,10 @@ async function initKernel() {
 async function regenerate() {
   if (!K) return;
   const token = ++runToken;
-  const { parts, g } = buildPartList(cfg);
+  const ecfg = { ...cfg, bed: effBed() };
+  const { parts, g } = buildPartList(ecfg);
   current = { parts, g, results: new Map() };
-  const bedKey = cfg.bed.join('x');
+  const bedKey = ecfg.bed.join('x');
   const todo = parts.filter(p => !cache.has(p.sig + '|' + bedKey));
   let done = 0; const t0 = performance.now();
   for (const p of parts) { const r = cache.get(p.sig + '|' + bedKey); if (r) current.results.set(p.id, r); }
@@ -158,7 +171,7 @@ async function regenerate() {
     await new Promise(r => setTimeout(r, 0));
     if (token !== runToken) return;
     let r;
-    try { r = generatePart(K, p, cfg.bed); } catch (e) { console.error(p.id, e); r = { pieces: [], error: String(e) }; }
+    try { r = generatePart(K, p, ecfg.bed); } catch (e) { console.error(p.id, e); r = { pieces: [], error: String(e) }; }
     cache.set(p.sig + '|' + bedKey, r);
     current.results.set(p.id, r);
     done++;
@@ -172,7 +185,7 @@ async function regenerate() {
   setStatus(`Listo · ${todo.length ? fmt((performance.now() - t0) / 1000, 1) + ' s · ' : ''}motor ${K.name === 'manifold' ? 'Manifold' : 'JSCAD'}`, 1);
   if (viewMode === 'bed') showBed();
 }
-function setStatus(t, f) { $('status').textContent = t; $('barI').style.width = (f * 100).toFixed(0) + '%'; }
+function setStatus(t, f) { $('status').textContent = t; $('barI').style.width = (f * 100).toFixed(0) + '%'; $('status').parentElement.hidden = t.startsWith('Listo'); }
 
 // ------------------------------------------------------------------ lista
 function pieceRows() {
@@ -215,8 +228,7 @@ function select(partId, pieceIdx) {
   const box = $('selBox');
   const p = selected && current.parts.find(x => x.id === partId);
   const pc = p && current.results.get(p.id)?.pieces[pieceIdx];
-  if (pc) {
-    box.hidden = false;
+  if (false) {
     box.innerHTML = `${esc(p.name)} ${pc.label ? `<span class="sub">${pc.label}</span>` : ''} · <b>${p.inst.length}×</b> · <b>${pc.size.map(v => fmt(v)).join('×')}</b> mm`;
   } else box.hidden = true;
   if (viewMode === 'bed') showBed();
@@ -355,6 +367,11 @@ function showBed() {
   plate.position.set(bx / 2, by / 2, -1); bedGroup.add(plate);
   const grid = new THREE.GridHelper(Math.max(bx, by), Math.round(Math.max(bx, by) / 20), 0x555b63, 0x3d4249);
   grid.rotation.x = Math.PI / 2; grid.position.set(bx / 2, by / 2, 0.05); grid.scale.set(bx / Math.max(bx, by), by / Math.max(bx, by), 1); bedGroup.add(grid);
+  const m = +(cfg.bedMargin ?? 0) || 0;
+  if (m > 0) {
+    const pts = [[m, m], [bx - m, m], [bx - m, by - m], [m, by - m], [m, m]].map(([x, y]) => new THREE.Vector3(x, y, 0.3));
+    bedGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({ color: 0xf0b04a })));
+  }
   const sel = selected || firstPiece();
   if (sel) {
     const p = current.parts.find(x => x.id === sel.partId);
@@ -511,7 +528,7 @@ function readme() {
   const g = current.g, lines = [];
   lines.push('CONFIGURADOR RACK HOME LAB', '='.repeat(40), '');
   lines.push(`Rack ${cfg.std}" · ${g.NU}U · ancho ${fmt(g.W, 1)} mm · fondo ${g.D} mm · alto total ≈ ${fmt(g.H + 12)} mm`);
-  lines.push(`Cama de impresión: ${cfg.bed.join(' × ')} mm`, '');
+  lines.push(`Cama de impresión: ${cfg.bed.join(' × ')} mm (zona útil ${effBed().join(' × ')} mm, margen ${cfg.bedMargin ?? 0} mm)`, '');
   lines.push('MÓDULOS (de abajo arriba)');
   for (const { m, u0 } of moduleLayout(cfg)) lines.push(`  U${u0}${m.u > 1 ? '-' + (u0 + m.u - 1) : ''}  ${MODULE_TYPES[m.type].name}${m.label && m.dev ? ' · ' + m.label + ' ' + m.dev.join('×') + ' mm' : ''}`);
   lines.push('', 'PIEZAS (el nombre de archivo termina en __xN = imprimir N copias)');
@@ -563,7 +580,7 @@ initControls();
 renderControls();
 applyTheme();
 resize();
-current = { ...buildPartList(cfg), results: new Map() };
+current = { ...buildPartList({ ...cfg, bed: effBed() }), results: new Map() };
 rebuildScene(); renderParts();
 initKernel().then(k => { K = k; regenerate(); }).catch(e => {
   console.error(e); setStatus('No se pudo cargar el motor 3D', 0);

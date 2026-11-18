@@ -29,7 +29,7 @@ export function defaultModule(type) {
 export function defaultConfig() {
   return {
     std: '10', depth: 250, extraU: 0, wall: 3, faceT: 4,
-    bed: [256, 256, 256], bedPreset: 'x1c',
+    bed: [250, 220, 256], bedPreset: 'mine', bedMargin: 2,
     showDevices: true, showRails: true, fans: [],
     modules: [ // de abajo arriba
       defaultModule('storage'), defaultModule('compute'),
