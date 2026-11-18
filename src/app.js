@@ -1,5 +1,5 @@
 // ===================================================================
-//  Interfaz: estado, visor 3D, lista de piezas y descargas
+//  Interfaz v2: raíles, tapas con diseño 2D, baldas, visor 3D y descargas
 // ===================================================================
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
@@ -15,129 +15,197 @@ const PRESETS = {
   k1max: { name: 'Creality K1 Max', bed: [300, 300, 300] },
   custom: { name: 'Personalizada', bed: null },
 };
-const STORE = 'rack-config-v1';
+const STORE = 'rack-config-v2';
+const SIDE_ORDER = ['front', 'rear', 'left', 'right', 'top'];
 const $ = (id) => document.getElementById(id);
 const fmt = (n, d = 0) => n.toLocaleString('es-ES', { minimumFractionDigits: d, maximumFractionDigits: d });
+const esc = (s) => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 
 let cfg = load();
 let K = null;
-const cache = new Map();          // sig|bed -> { pieces, split }
+const cache = new Map();
 let current = { parts: [], g: null, results: new Map() };
-let selected = null;              // { partId, pieceIdx }
+let selected = null;
 let viewMode = 'asm';
 let runToken = 0;
 
 function load() {
   try {
     const s = JSON.parse(localStorage.getItem(STORE));
-    if (s && s.modules) {
-      // configuraciones guardadas antes de existir el margen: pasar a "mis impresoras"
-      if (s.bedMargin === undefined) { s.bed = [250, 220, 256]; s.bedPreset = 'mine'; s.bedMargin = 2; }
-      return { ...defaultConfig(), ...s };
-    }
+    if (s && s.v === 2 && Array.isArray(s.panels)) return syncConfig({ ...defaultConfig(), ...s });
   } catch (e) {}
   return defaultConfig();
 }
 function save() { try { localStorage.setItem(STORE, JSON.stringify(cfg)); } catch (e) {} }
+function effBed() { const m = +(cfg.bedMargin ?? 0) || 0; return [cfg.bed[0] - 2 * m, cfg.bed[1] - 2 * m, cfg.bed[2]]; }
 
-// ------------------------------------------------------------------ UI
+// ------------------------------------------------------------------ UI lateral
 function initControls() {
-  const sel = $('addType');
-  for (const [k, t] of Object.entries(MODULE_TYPES)) sel.add(new Option(t.name, k));
-  sel.value = 'shelf';
   const ps = $('preset');
   for (const [k, p] of Object.entries(PRESETS)) ps.add(new Option(p.name, k));
+  for (const s of SIDE_ORDER) $('addSide').add(new Option(SIDES[s], s));
+  for (const [k, t] of Object.entries(SHELF_TYPES)) $('addShelfType').add(new Option(t.name, k));
 
-  $('std').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; cfg.std = b.dataset.v; changed(); });
+  $('std').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; cfg.std = b.dataset.v; changed(true); });
+  $('rails').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; cfg.rails = b.dataset.v; changed(true); });
   $('view').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; setView(b.dataset.v); });
-  const num = (id, key, lo, hi) => $(id).addEventListener('change', e => { const v = clamp(+e.target.value, lo, hi); if (!isNaN(v)) { cfg[key] = v; changed(); } });
-  num('bedM', 'bedMargin', 0, 20);
-  num('depth', 'depth', 180, 450); num('extraU', 'extraU', 0, 12); num('wall', 'wall', 2.4, 5); num('faceT', 'faceT', 3, 6);
+  const num = (id, key, lo, hi, round) => $(id).addEventListener('change', e => { let v = +e.target.value; if (isNaN(v)) return; v = clamp(round ? Math.round(v) : v, lo, hi); cfg[key] = v; changed(true); });
+  num('bedM', 'bedMargin', 0, 20); num('depth', 'depth', 180, 450); num('NU', 'NU', 1, 42, true); num('wall', 'wall', 2.4, 5); num('faceT', 'faceT', 3, 6);
   $('depthR').addEventListener('input', e => { $('depth').value = e.target.value; });
-  $('depthR').addEventListener('change', e => { cfg.depth = +e.target.value; changed(); });
+  $('depthR').addEventListener('change', e => { cfg.depth = +e.target.value; changed(true); });
   ps.addEventListener('change', e => { cfg.bedPreset = e.target.value; const p = PRESETS[cfg.bedPreset]; if (p.bed) cfg.bed = [...p.bed]; changed(); });
   ['bedX', 'bedY', 'bedZ'].forEach((id, i) => $(id).addEventListener('change', e => { const v = clamp(+e.target.value, 100, 600); if (!isNaN(v)) { cfg.bed[i] = v; cfg.bedPreset = 'custom'; changed(); } }));
   $('showDevices').addEventListener('change', e => { cfg.showDevices = e.target.checked; save(); rebuildScene(); });
   $('showRails').addEventListener('change', e => { cfg.showRails = e.target.checked; save(); rebuildScene(); });
-  $('addBtn').addEventListener('click', () => { cfg.modules.push(defaultModule($('addType').value)); changed(); });
   $('reset').addEventListener('click', () => { cfg = defaultConfig(); selected = null; changed(); });
   $('dlAll').addEventListener('click', downloadAll);
   $('dlSel').addEventListener('click', downloadSelected);
 
-  const stack = $('stack');
-  stack.addEventListener('click', e => {
-    const b = e.target.closest('button[data-act]'); if (!b) return;
-    const i = +b.closest('.mod').dataset.i, act = b.dataset.act, M = cfg.modules;
-    if (act === 'up' && i < M.length - 1) [M[i], M[i + 1]] = [M[i + 1], M[i]];
-    if (act === 'down' && i > 0) [M[i], M[i - 1]] = [M[i - 1], M[i]];
-    if (act === 'del') M.splice(i, 1);
+  $('addPanel').addEventListener('click', () => {
+    const side = $('addSide').value, fr = firstFree(cfg, side);
+    if (!fr) { toast(side === 'top' ? 'Ya hay una tapa superior.' : `El ${SIDES[side].toLowerCase()} ya está cubierto. Acorta una tapa para hacer hueco.`); return; }
+    cfg.panels.push(makePanel(cfg, side, fr.u0, fr.nu, side === 'top' || side === 'left' || side === 'right' ? 'ranuras' : 'lisa'));
     changed();
   });
-  stack.addEventListener('change', e => {
-    const el = e.target, mod = el.closest('.mod'); if (!mod) return;
-    const m = cfg.modules[+mod.dataset.i], f = el.dataset.f;
-    if (f === 'label') m.label = el.value.slice(0, 40);
-    else if (f === 'button') m.button = el.checked;
-    else if (f.startsWith('dev')) { const v = clamp(+el.value, 10, 600); if (!isNaN(v)) m.dev[+f[3]] = v; }
-    else { const v = Math.round(+el.value); if (!isNaN(v)) m[f] = clamp(v, +el.min, +el.max); }
+  $('addShelf').addEventListener('click', () => {
+    const g = derive(cfg);
+    let u = 1; for (const s of cfg.shelves) u = Math.max(u, s.u + shelfSpan(s, g));
+    if (u > g.NU) u = g.NU;
+    cfg.shelves.push(defaultShelf($('addShelfType').value, u));
     changed();
+  });
+
+  const pl = $('panelList');
+  pl.addEventListener('click', e => {
+    const b = e.target.closest('button[data-act]'); if (!b) return;
+    const id = b.closest('[data-pid]').dataset.pid, i = cfg.panels.findIndex(p => p.id === id);
+    if (b.dataset.act === 'del') { cfg.panels.splice(i, 1); changed(); }
+    if (b.dataset.act === 'edit') openEditor(id);
+  });
+  pl.addEventListener('change', e => {
+    const el = e.target, row = el.closest('[data-pid]'); if (!row) return;
+    const p = cfg.panels.find(x => x.id === row.dataset.pid), f = el.dataset.f;
+    if (f === 'tpl') { p.tpl = el.value; p.auto = true; }
+    else { const v = Math.round(+el.value); if (!isNaN(v)) p[f] = v; }
+    changed(true);
+  });
+  const sl = $('shelfList');
+  sl.addEventListener('click', e => {
+    const b = e.target.closest('button[data-act]'); if (!b) return;
+    const i = cfg.shelves.findIndex(s => s.id === b.closest('[data-sid]').dataset.sid);
+    if (b.dataset.act === 'del') { cfg.shelves.splice(i, 1); changed(); }
+  });
+  sl.addEventListener('change', e => {
+    const el = e.target, row = el.closest('[data-sid]'); if (!row) return;
+    const s = cfg.shelves.find(x => x.id === row.dataset.sid), f = el.dataset.f;
+    if (f === 'label') s.label = el.value.slice(0, 40);
+    else if (f.startsWith('dev')) { const v = clamp(+el.value, 10, 600); if (!isNaN(v)) s.dev[+f[3]] = v; }
+    else { const v = Math.round(+el.value); if (!isNaN(v)) s[f] = clamp(v, +el.min, +el.max); }
+    changed(true);
   });
 }
-function effBed() { const m = +(cfg.bedMargin ?? 0) || 0; return [cfg.bed[0] - 2 * m, cfg.bed[1] - 2 * m, cfg.bed[2]]; }
-const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 
 function renderControls() {
   const g = derive(cfg);
-  $('std').querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === cfg.std)));
-  $('view').querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === viewMode)));
-  $('depth').value = cfg.depth; $('depthR').value = cfg.depth; $('extraU').value = cfg.extraU; $('wall').value = cfg.wall; $('faceT').value = cfg.faceT;
+  const pressed = (id, v) => $(id).querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === v)));
+  pressed('std', cfg.std); pressed('view', viewMode); pressed('rails', cfg.rails);
+  $('depth').value = cfg.depth; $('depthR').value = cfg.depth; $('NU').value = cfg.NU; $('wall').value = cfg.wall; $('faceT').value = cfg.faceT;
   $('preset').value = cfg.bedPreset in PRESETS ? cfg.bedPreset : 'custom';
   $('bedM').value = cfg.bedMargin ?? 0;
   const eb = effBed(); $('bedEff').textContent = `Zona útil para las piezas: ${fmt(eb[0])} × ${fmt(eb[1])} × ${fmt(eb[2])} mm`;
   $('bedX').value = cfg.bed[0]; $('bedY').value = cfg.bed[1]; $('bedZ').value = cfg.bed[2];
   $('showDevices').checked = cfg.showDevices !== false; $('showRails').checked = cfg.showRails !== false;
-  const outerD = g.D + 2 * g.FT, outerH = g.H + 12;
-  $('dims').innerHTML = `<span><b>${g.NU}U</b> de raíl</span><span>ancho <b>${fmt(g.W, 1)}</b></span><span>fondo <b>${fmt(outerD)}</b></span><span>alto <b>${fmt(outerH)}</b> mm</span>`;
+  $('dims').innerHTML = `<span><b>${g.NU}U</b></span><span>ancho <b>${fmt(g.W, 1)}</b></span><span>fondo <b>${fmt(g.D + 2 * g.FT)}</b></span><span>alto <b>${fmt(g.H + 12)}</b> mm</span>`;
 
-  const lay = moduleLayout(cfg);
-  let html = '';
-  if (cfg.extraU > 0) html += `<div class="free-u">U${g.NU - cfg.extraU + 1}–${g.NU} · ${cfg.extraU}U libres</div>`;
-  for (let k = lay.length - 1; k >= 0; k--) {
-    const { m, i, u0 } = lay[k], T = MODULE_TYPES[m.type];
-    const range = m.u > 1 ? `U${u0}–${u0 + m.u - 1}` : `U${u0}`;
-    const uMax = m.type === 'patch' ? 1 : m.type === 'compute' ? 8 : 8;
-    let rows = '';
-    if (m.type !== 'patch') rows += `<label>Alto <input type="number" data-f="u" min="${T.minU}" max="${uMax}" value="${m.u}"> U</label>`;
-    if (m.type === 'storage') rows += `<label>HDD 3,5″ <input type="number" data-f="hdd" min="0" max="4" value="${m.hdd}"></label><label>SSD 2,5″ <input type="number" data-f="ssd" min="0" max="8" value="${m.ssd}"></label>`;
-    if (m.type === 'compute') rows += `<label>SSD 2,5″ <input type="number" data-f="ssd" min="0" max="8" value="${m.ssd}"></label><label><input type="checkbox" data-f="button" ${m.button ? 'checked' : ''}> Pulsador + LED</label>`;
-    if (m.type === 'patch') rows += `<label>Keystones <input type="number" data-f="keystones" min="1" max="${Math.floor((g.OPEN - 10) / 25)}" value="${m.keystones}"></label>`;
-    let extra = '';
-    if (m.dev) extra = `<div class="row"><input type="text" data-f="label" value="${esc(m.label || '')}" aria-label="Nombre del equipo" placeholder="Nombre del equipo"></div>
-      <div class="row"><span>Equipo (mm)</span><label>an <input type="number" data-f="dev0" min="10" max="600" value="${m.dev[0]}"></label><label>fo <input type="number" data-f="dev1" min="10" max="600" value="${m.dev[1]}"></label><label>al <input type="number" data-f="dev2" min="5" max="400" value="${m.dev[2]}"></label></div>`;
-    if (m.type === 'compute') extra = `<div class="row free">Placa micro-ATX 244×244 en vertical (HP IPM17-002), fuente SFX.</div>`;
-    html += `<div class="mod" data-i="${i}"><div class="u">${range}<span>${m.u}U</span></div><div class="body">
-      <div class="top"><strong title="${esc(T.name)}">${esc(m.label && m.dev ? m.label : T.name)}</strong>
-        <button type="button" class="icon" data-act="up" aria-label="Subir" ${i === cfg.modules.length - 1 ? 'disabled' : ''}>▲</button>
-        <button type="button" class="icon" data-act="down" aria-label="Bajar" ${i === 0 ? 'disabled' : ''}>▼</button>
-        <button type="button" class="icon" data-act="del" aria-label="Quitar">✕</button></div>
-      ${rows ? `<div class="row">${rows}</div>` : ''}${extra}</div></div>`;
+  // raíles
+  const railMm = fmt(g.NU * U, 1);
+  if (cfg.rails === 'metal') {
+    $('railInfo').innerHTML = `<p>4 raíles en L de <b>${g.NU}U (${railMm} mm)</b>, ala frontal de 15,8 mm y lateral de 20 mm, agujero cuadrado para tuerca enjaulada M6. Si son más largos, córtalos a ${railMm} mm.</p>
+      <p class="sub">Dónde comprarlos:</p><ul class="links">${RAIL_SHOPS.map(s => `<li><a href="${s.url}" target="_blank" rel="noopener">${esc(s.name)}</a></li>`).join('')}</ul>`;
+  } else {
+    const segs = railSegments({ ...cfg, bed: effBed() }, g);
+    $('railInfo').innerHTML = `<p>Se imprimen 4 raíles en L de 5 mm de grosor, en ${segs.length} tramo${segs.length > 1 ? 's' : ''} (${segs.map(n => n + 'U').join(' + ')}) unidos con espigas de 3 mm. Llevan insertos roscados M5 para las tapas y M4 para los laterales.</p>
+      <p class="sub">Imprime en PETG o ASA con 5 perímetros. Para un rack cargado, mejor raíles metálicos.</p>`;
   }
-  if (!cfg.modules.length) html += `<div class="free-u">Sin módulos. Añade uno abajo.</div>`;
-  $('stack').innerHTML = html;
 
-  renderFans();
-  const w = deviceWarnings(cfg, g);
-  if (g.NU !== 14) w.unshift(`El rack mide ${g.NU}U. Tus raíles son de 14U: córtalos a ${fmt(g.NU * U, 1)} mm o usa raíles de ${g.NU}U.`);
-  if (cfg.std === '19') w.push('En 19″ casi todas las piezas grandes se parten en trozos. Revisa la lista de impresión.');
-  $('warnSec').hidden = true;
-  $('warns').innerHTML = w.map(t => `<div class="warn">${esc(t)}</div>`).join('');
+  // tapas
+  const clash = panelClashes(cfg);
+  const cover = {};
+  for (const s of SIDE_ORDER) cover[s] = 0;
+  for (const p of cfg.panels) cover[p.side] += p.side === 'top' ? 1 : p.nu;
+  let html = '';
+  for (const side of SIDE_ORDER) {
+    const list = cfg.panels.filter(p => p.side === side).sort((a, b) => b.u0 - a.u0);
+    const need = side === 'top' ? 1 : g.NU;
+    html += `<div class="pgroup"><div class="pghead">${SIDES[side]}<span>${side === 'top' ? (list.length ? '' : 'sin tapa') : `${Math.min(cover[side], need)}/${need}U cubiertas`}</span></div>`;
+    for (const p of list) {
+      const tplOpts = Object.entries(TEMPLATES).filter(([k]) => k !== 'patch' || side === 'front' || side === 'rear')
+        .map(([k, n]) => `<option value="${k}"${p.auto && p.tpl === k ? ' selected' : ''}>${n}</option>`).join('') + (p.auto ? '' : '<option value="" selected>Diseño propio</option>');
+      const range = side === 'top' ? '' : `<label>U <input type="number" data-f="u0" min="1" max="${g.NU}" value="${p.u0}" aria-label="Primera U"></label><label>alto <input type="number" data-f="nu" min="1" max="${g.NU}" value="${p.nu}" aria-label="Alto en U"></label>`;
+      html += `<div class="prow${clash.has(p.id) ? ' clash' : ''}" data-pid="${p.id}">
+        <div class="prev" aria-hidden="true">${miniSvg(p, g)}</div>
+        <div class="pbody"><div class="top"><strong>${esc(panelLabel(p))}</strong>
+          <button type="button" class="btn sm" data-act="edit">Diseñar</button>
+          <button type="button" class="icon" data-act="del" aria-label="Quitar tapa">✕</button></div>
+          <div class="row">${range}<select data-f="tpl" aria-label="Plantilla">${tplOpts}</select></div>
+          ${clash.has(p.id) ? '<div class="row bad">Se pisa con otra tapa del mismo lado</div>' : ''}</div></div>`;
+    }
+    html += '</div>';
+  }
+  $('panelList').innerHTML = html;
+
+  // baldas
+  let sh = '';
+  const shelves = [...cfg.shelves].sort((a, b) => b.u - a.u);
+  for (const s of shelves) {
+    const span = shelfSpan(s, g), T = SHELF_TYPES[s.type];
+    let rows = `<label>en U <input type="number" data-f="u" min="1" max="${g.NU}" value="${s.u}"></label><span class="sub">ocupa ${span}U</span>`;
+    if (s.type === 'discos') rows += `<label>HDD <input type="number" data-f="hdd" min="0" max="4" value="${s.hdd}"></label><label>SSD <input type="number" data-f="ssd" min="0" max="8" value="${s.ssd}"></label>`;
+    if (s.type === 'placa') rows += `<label>SSD <input type="number" data-f="ssd" min="0" max="8" value="${s.ssd}"></label>`;
+    let extra = '';
+    if (s.dev) extra = `<div class="row"><input type="text" data-f="label" value="${esc(s.label || '')}" aria-label="Nombre del equipo" placeholder="Nombre del equipo"></div>
+      <div class="row"><span>Equipo (mm)</span><label>an <input type="number" data-f="dev0" min="10" max="600" value="${s.dev[0]}"></label><label>fo <input type="number" data-f="dev1" min="10" max="600" value="${s.dev[1]}"></label><label>al <input type="number" data-f="dev2" min="5" max="400" value="${s.dev[2]}"></label></div>`;
+    const covered = cfg.panels.some(p => p.side === 'front' && s.u >= p.u0 && s.u < p.u0 + p.nu) && cfg.panels.some(p => p.side === 'rear' && s.u >= p.u0 && s.u < p.u0 + p.nu);
+    sh += `<div class="mod" data-sid="${s.id}"><div class="u">U${s.u}<span>${span}U</span></div><div class="body">
+      <div class="top"><strong>${esc(s.dev && s.label ? s.label : T.name)}</strong><button type="button" class="icon" data-act="del" aria-label="Quitar balda">✕</button></div>
+      <div class="row">${rows}</div>${extra}
+      ${covered ? '' : '<div class="row bad">Falta tapa frontal o trasera en esta U para atornillar la bandeja</div>'}</div></div>`;
+  }
+  if (!shelves.length) sh = '<div class="free-u">Sin baldas. Añade una abajo.</div>';
+  $('shelfList').innerHTML = sh;
 }
-const esc = (s) => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+// Miniatura del diseño de una tapa
+function miniSvg(p, g) {
+  const { Lw, Lh } = panelDims(p, g);
+  const s = 46 / Math.max(Lw, Lh);
+  const w = Lw * s, h = Lh * s;
+  let body = '';
+  for (const sh of p.shapes) for (const q of prims(sh)) body += primSvg(q, Lh);
+  return `<svg viewBox="0 0 ${Lw} ${Lh}" width="${w.toFixed(1)}" height="${h.toFixed(1)}"><rect width="${Lw}" height="${Lh}" class="pf"/><g class="pc">${body}</g></svg>`;
+}
+function primSvg(q, Lh, cls = '') {
+  const Y = (y) => (Lh - y).toFixed(2);
+  if (q.k === 'c') return `<circle cx="${q.x}" cy="${Y(q.y)}" r="${q.d / 2}"${cls}/>`;
+  if (q.k === 'r') return `<rect x="${(q.x - q.w / 2).toFixed(2)}" y="${Y(q.y + q.h / 2)}" width="${q.w}" height="${q.h}" rx="${q.r}"${cls}/>`;
+  if (q.k === 'p') return `<polygon points="${q.pts.map(([x, y]) => x.toFixed(2) + ',' + Y(y)).join(' ')}"${cls}/>`;
+  if (q.k === 'f') {
+    const hs = (FAN_SIZES[q.s] || q.s * 0.85) / 2, r = q.s / 2 - 1;
+    let o = `<rect x="${q.x - q.s / 2 - 2}" y="${Y(q.y + q.s / 2 + 2)}" width="${q.s + 4}" height="${q.s + 4}" class="fanbg"/><circle cx="${q.x}" cy="${Y(q.y)}" r="${r}"${cls} class="fanring"/>`;
+    for (let k = Math.min(7, q.s * 0.11) + 3; k + 3 <= q.s / 2 - 2.5; k += 7) o += `<circle cx="${q.x}" cy="${Y(q.y)}" r="${k + 2}" class="fanline"/>`;
+    for (const sx of [-1, 1]) for (const sy of [-1, 1]) o += `<circle cx="${q.x + sx * hs}" cy="${Y(q.y + sy * hs)}" r="2.2"${cls}/>`;
+    return o;
+  }
+  return '';
+}
 
 let debounce = 0;
-function changed() {
+function changed(sync) {
+  if (sync) syncConfig(cfg);
   save(); renderControls();
-  clearTimeout(debounce); debounce = setTimeout(regenerate, 180);
+  if (ed) renderEditor();
+  clearTimeout(debounce); debounce = setTimeout(regenerate, 220);
 }
 
 // ------------------------------------------------------------------ motor
@@ -163,10 +231,10 @@ async function regenerate() {
   current = { parts, g, results: new Map() };
   const bedKey = ecfg.bed.join('x');
   const todo = parts.filter(p => !cache.has(p.sig + '|' + bedKey));
-  let done = 0; const t0 = performance.now();
   for (const p of parts) { const r = cache.get(p.sig + '|' + bedKey); if (r) current.results.set(p.id, r); }
+  if (selected && !parts.some(p => p.id === selected.partId)) selected = null;
   rebuildScene(); renderParts();
-  setStatus(todo.length ? `Generando 0/${todo.length}…` : 'Listo', todo.length ? 0 : 1);
+  let done = 0;
   for (const p of todo) {
     await new Promise(r => setTimeout(r, 0));
     if (token !== runToken) return;
@@ -174,20 +242,16 @@ async function regenerate() {
     try { r = generatePart(K, p, ecfg.bed); } catch (e) { console.error(p.id, e); r = { pieces: [], error: String(e) }; }
     cache.set(p.sig + '|' + bedKey, r);
     current.results.set(p.id, r);
-    done++;
-    setStatus(`Generando ${done}/${todo.length}…`, done / todo.length);
     addPartToScene(p);
-    if (done % 4 === 0) renderParts();
+    if (++done % 4 === 0) renderParts();
   }
   if (token !== runToken) return;
   if (cache.size > 400) { const keep = new Set(parts.map(p => p.sig + '|' + bedKey)); for (const k of cache.keys()) if (!keep.has(k)) cache.delete(k); }
   renderParts();
-  setStatus(`Listo · ${todo.length ? fmt((performance.now() - t0) / 1000, 1) + ' s · ' : ''}motor ${K.name === 'manifold' ? 'Manifold' : 'JSCAD'}`, 1);
   if (viewMode === 'bed') showBed();
 }
-function setStatus(t, f) { $('status').textContent = t; $('barI').style.width = (f * 100).toFixed(0) + '%'; $('status').parentElement.hidden = t.startsWith('Listo'); }
 
-// ------------------------------------------------------------------ lista
+// ------------------------------------------------------------------ lista de piezas
 function pieceRows() {
   const rows = [];
   for (const p of current.parts) {
@@ -213,7 +277,7 @@ function renderParts() {
   }
   $('tbody').innerHTML = html;
   const pending = rows.some(r => r.pending);
-  $('sum').innerHTML = `<b>${prints}</b> impresiones de <b>${models}</b> modelos · <b>≈ ${fmt(grams / 1000, 2)} kg</b> de filamento (PLA/PETG, 4 perímetros, 25 % relleno)${bad ? ` · <b style="color:var(--bad)">${bad} no caben</b>` : ''}`;
+  $('sum').innerHTML = pending ? `Generando piezas… <b>${rows.filter(r => !r.pending).length}</b>` : `<b>${prints}</b> impresiones de <b>${models}</b> modelos · <b>≈ ${fmt(grams / 1000, 2)} kg</b> de filamento${bad ? ` · <b style="color:var(--bad)">${bad} no caben</b>` : ''}`;
   $('dlAll').disabled = pending || !models;
   $('dlSel').disabled = pending || !selected;
   $('hwul').innerHTML = hardware(cfg, current.g, current.parts).map(([t, n]) => `<li><b>${n}×</b> ${esc(t)}</li>`).join('');
@@ -225,12 +289,6 @@ $('tbody').addEventListener('click', e => {
 function select(partId, pieceIdx) {
   selected = partId ? { partId, pieceIdx } : null;
   renderParts(); highlight();
-  const box = $('selBox');
-  const p = selected && current.parts.find(x => x.id === partId);
-  const pc = p && current.results.get(p.id)?.pieces[pieceIdx];
-  if (false) {
-    box.innerHTML = `${esc(p.name)} ${pc.label ? `<span class="sub">${pc.label}</span>` : ''} · <b>${p.inst.length}×</b> · <b>${pc.size.map(v => fmt(v)).join('×')}</b> mm`;
-  } else box.hidden = true;
   if (viewMode === 'bed') showBed();
 }
 
@@ -280,16 +338,24 @@ function mat(color, opts = {}) {
   if (!matCache.has(k)) matCache.set(k, new THREE.MeshStandardMaterial({ color, roughness: 0.62, metalness: 0.02, ...opts }));
   return matCache.get(k);
 }
+function zSpread(z) { const g = current.g; return (z - g.Z0) / (g.NU * U) * 160; }
 function explodeOffset(p, inst) {
   if (viewMode !== 'exp') return [0, 0, 0];
-  const g = current.g, e = p.explode || [0, 0, 0];
-  const o = [e[0] * 90, e[1] * 140, e[2] * 90];
-  if (p.id.startsWith('pared_')) o[0] = p.id.includes('_izq') ? -110 : 110;
-  if (p.id === 'bloque_esquina') o[0] = (inst.s && inst.s[0] < 0) ? 50 : -50;
-  if (p.id.startsWith('pared_') || /^m\d|^trasera/.test(p.id)) o[2] += (inst.t[2] - g.Z0) / (g.NU * U) * 160;
-  const top = p.id.startsWith('tapa_superior');
-  if (top || (p.id === 'bloque_esquina' && inst.s && inst.s[2] < 0)) o[2] += 160 + (top ? 90 : 40);
-  return o;
+  const zf = zSpread(inst.t[2]);
+  if (p.rail) return [(inst.s[0] < 0 ? 1 : -1) * 40, (inst.s[1] < 0 ? 1 : -1) * 40, zf + 20 * (inst.t[2] > current.g.Z0 + 1)];
+  switch (p.side) {
+    case 'front': return [0, -140, zf];
+    case 'rear': return [0, 140, zf];
+    case 'left': return [-110, 0, zf];
+    case 'right': return [110, 0, zf];
+    case 'top': return [0, 0, 250];
+  }
+  if (p.id === 'bloque_esquina') return [(inst.s && inst.s[0] < 0) ? 50 : -50, 0, inst.s && inst.s[2] < 0 ? 200 : 0];
+  if (p.shelfId) return [0, 0, zf];
+  if (p.id === 'base') return [0, 0, -90];
+  if (p.id === 'pata') return [0, 0, -135];
+  if (p.id.startsWith('tapa_superior')) return [0, 0, 250];
+  return [0, 0, 0];
 }
 function addPartToScene(p) {
   const r = current.results.get(p.id); if (!r) return;
@@ -299,11 +365,10 @@ function addPartToScene(p) {
     for (const inst of p.inst) {
       const m = new THREE.Mesh(geo, mat(p.color));
       const o = explodeOffset(p, inst);
-      // con varios trozos, separa un poco en despiece para ver las uniones
       const cut = r.pieces.length > 1 && viewMode === 'exp' ? k * 6 : 0;
       m.position.set(inst.t[0] + o[0] + cut, inst.t[1] + o[1] + cut * 0.3, inst.t[2] + o[2] + cut * 0.3);
       if (inst.s) m.scale.set(...inst.s);
-      m.userData = { partId: p.id, pieceIdx: k, inst };
+      m.userData = { partId: p.id, pieceIdx: k, inst, panelId: p.panelId };
       partGroup.add(m);
     }
   });
@@ -315,17 +380,17 @@ function rebuildScene() {
   for (const p of current.parts) addPartToScene(p);
   if (cfg.showDevices !== false) for (const [x, y, z, sx, sy, sz, col] of mockups(cfg, g)) {
     const m = new THREE.Mesh(new THREE.BoxGeometry(sx, sy, sz), mat(col, { transparent: true, opacity: 0.88, roughness: 0.5 }));
-    const ez = viewMode === 'exp' ? (z - g.Z0) / (g.NU * U) * 160 : 0;
-    m.position.set(x + sx / 2, y + sy / 2, z + sz / 2 + ez); mockGroup.add(m);
+    m.position.set(x + sx / 2, y + sy / 2, z + sz / 2 + (viewMode === 'exp' ? zSpread(z) : 0)); mockGroup.add(m);
   }
-  for (const f of cfg.fans || []) fanGroup.add(fanMock(f, g));
-  if (cfg.showRails !== false) {
+  if (viewMode !== 'exp') for (const f of fanPoses(cfg, g)) fanGroup.add(fanMock(f));
+  if (cfg.showRails !== false && !g.printed) {
     const L = g.NU * U, mm = mat('#a7adb4', { metalness: 0.55, roughness: 0.35 });
     for (const [mx, my] of [[1, 1], [-1, 1], [1, -1], [-1, -1]]) {
       const grp = new THREE.Group();
       const a = new THREE.Mesh(new THREE.BoxGeometry(g.RF, g.RT, L), mm); a.position.set(g.RF / 2, g.RT / 2, L / 2);
       const b = new THREE.Mesh(new THREE.BoxGeometry(g.RT, g.RS, L), mm); b.position.set(g.RT / 2, g.RS / 2, L / 2);
       grp.add(a, b); grp.scale.set(mx, my, 1); grp.position.set(mx < 0 ? g.W : 0, my < 0 ? g.D : 0, g.Z0);
+      if (viewMode === 'exp') grp.position.x += (mx < 0 ? 1 : -1) * 40, grp.position.y += (my < 0 ? 1 : -1) * 40;
       railGroup.add(grp);
     }
   }
@@ -362,7 +427,7 @@ function showBed() {
   bedGroup.clear();
   root.visible = viewMode !== 'bed';
   if (viewMode !== 'bed') return;
-  const [bx, by] = cfg.bed, c = themeColors();
+  const [bx, by] = cfg.bed;
   const plate = new THREE.Mesh(new THREE.BoxGeometry(bx, by, 2), mat('#2b2f35', { roughness: 0.8 }));
   plate.position.set(bx / 2, by / 2, -1); bedGroup.add(plate);
   const grid = new THREE.GridHelper(Math.max(bx, by), Math.round(Math.max(bx, by) / 20), 0x555b63, 0x3d4249);
@@ -394,7 +459,7 @@ function setView(v) {
   if (v === 'bed') { showBed(); return; }
   bedGroup.clear(); root.visible = true; framedFor = ''; rebuildScene();
 }
-// selección con clic
+// clic: seleccionar · doble clic en una tapa: abrir su diseño · modo ventilador: poner/quitar
 const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
 let downAt = null;
 renderer.domElement.addEventListener('pointerdown', e => { downAt = [e.clientX, e.clientY]; });
@@ -410,6 +475,11 @@ renderer.domElement.addEventListener('pointerup', e => {
   if (fanMode) { placeFan(hit); return; }
   if (hit) select(hit.object.userData.partId, hit.object.userData.pieceIdx); else select(null);
 });
+renderer.domElement.addEventListener('dblclick', e => {
+  if (fanMode || viewMode === 'bed') return;
+  const hit = pick(e);
+  if (hit && hit.object.userData.panelId) openEditor(hit.object.userData.panelId);
+});
 let moveQueued = null;
 renderer.domElement.addEventListener('pointermove', e => {
   if (!fanMode || e.buttons) return;
@@ -418,50 +488,42 @@ renderer.domElement.addEventListener('pointermove', e => {
 });
 renderer.domElement.addEventListener('pointerleave', () => ghostGroup.clear());
 
-// ------------------------------------------------------------------ ventiladores
+// ------------------------------------------------------------------ ventiladores en 3D
 let fanMode = false, fanSize = 80;
-const SURF_AB = { y: (p) => [p.x, p.z], x: (p) => [p.y, p.z], z: (p) => [p.x, p.y] };
 function fanFromHit(hit) {
-  if (!hit) return { err: null };
-  const p = current.parts.find(x => x.id === hit.object.userData.partId);
-  if (!p || !p.fan) return { err: 'Los ventiladores van en frontales, traseras, paredes laterales o tapas.' };
-  const [a, b] = SURF_AB[p.fan.n](hit.point);
-  const near = (cfg.fans || []).findIndex(f => f.surf === p.fan.surf && Math.hypot(f.a - a, f.b - b) < f.s / 2);
-  if (near >= 0) return { remove: near, f: cfg.fans[near] };
-  const f = snapFan(p, hit.object.userData.inst, current.g, fanSize, a, b);
-  if (!f) return { err: `Un ventilador de ${fanSize} mm no cabe en esta pieza. Prueba uno más pequeño.` };
-  const clash = (cfg.fans || []).find(o => o.surf === f.surf && Math.hypot(o.a - f.a, o.b - f.b) < (o.s + f.s) / 2 + 4);
-  return { f, clash };
+  if (!hit) return {};
+  const pid = hit.object.userData.panelId;
+  const p = pid && cfg.panels.find(x => x.id === pid);
+  if (!p) return { err: 'Los ventiladores van en las tapas: frontales, traseras, laterales o superior.' };
+  const [a, b] = worldToPanel(p, hit.point, current.g);
+  const near = p.shapes.findIndex(s => s.t === 'fan' && Math.hypot(s.x - a, s.y - b) < s.s / 2);
+  if (near >= 0) return { p, remove: near, f: p.shapes[near] };
+  const f = fitFan(p, current.g, fanSize, a, b);
+  if (!f) return { err: `Un ventilador de ${fanSize} mm no cabe en esta tapa. Prueba uno más pequeño.` };
+  const clash = p.shapes.some(s => s.t === 'fan' && Math.hypot(s.x - f.x, s.y - f.y) < (s.s + f.s) / 2 + 4);
+  return { p, f, clash };
 }
 function placeFan(hit) {
   const r = fanFromHit(hit);
   if (r.err) { toast(r.err); return; }
   if (!r.f) return;
-  cfg.fans = cfg.fans || [];
-  if (r.remove !== undefined) { cfg.fans.splice(r.remove, 1); toast(`Ventilador de ${r.f.s} mm quitado`); }
+  if (r.remove !== undefined) { r.p.shapes.splice(r.remove, 1); toast(`Ventilador de ${r.f.s} mm quitado`); }
   else if (r.clash) { toast('Se solapa con otro ventilador. Haz clic sobre él para quitarlo.'); return; }
-  else { cfg.fans.push(r.f); toast(`Ventilador de ${r.f.s} mm en ${SURF_NAMES[r.f.surf]}`); }
+  else {
+    // el ventilador sustituye a lo que hubiera debajo de él en la plantilla
+    r.p.shapes.push(r.f); toast(`Ventilador de ${r.f.s} mm en ${panelLabel(r.p)}`);
+  }
+  r.p.auto = false;
   ghostGroup.clear(); changed();
 }
-function surfPose(f, g, out = 0) {
-  const top = g.Z0 + g.NU * U - g.POCKET;
-  switch (f.surf) {
-    case 'front': return { c: [f.a, -g.FT - out, f.b], n: 'y' };
-    case 'rear': return { c: [f.a, g.D + g.FT + out, f.b], n: 'y' };
-    case 'left': return { c: [g.RT - out, f.a, f.b], n: 'x' };
-    case 'right': return { c: [g.W - g.RT + out, f.a, f.b], n: 'x' };
-    case 'top': return { c: [f.a, f.b, top + g.PLATE_T + out], n: 'z' };
-    case 'bottom': return { c: [f.a, f.b, -out], n: 'z' };
-  }
-}
 function orient(obj, n) { if (n === 'y') obj.rotation.set(0, 0, 0); else if (n === 'x') obj.rotation.set(0, 0, Math.PI / 2); else obj.rotation.set(Math.PI / 2, 0, 0); }
-function fanMock(f, g) {
+function fanMock(f) {
   const grp = new THREE.Group();
   const frame = new THREE.Mesh(new THREE.BoxGeometry(f.s, 25, f.s), mat('#26292d', { roughness: 0.7 }));
   const blades = new THREE.Mesh(new THREE.CylinderGeometry(f.s / 2 - 2, f.s / 2 - 2, 26, 32), mat('#3a3f45', { roughness: 0.6 }));
   const hub = new THREE.Mesh(new THREE.CylinderGeometry(f.s * 0.2, f.s * 0.2, 27, 24), mat('#4a6fa5', { roughness: 0.5 }));
   grp.add(frame, blades, hub);
-  const p = fanPose(f, g); orient(grp, p.n); grp.position.set(...p.c);
+  orient(grp, f.n); grp.position.set(...f.c);
   return grp;
 }
 function showGhost(hit) {
@@ -473,35 +535,21 @@ function showGhost(hit) {
   const ring = new THREE.Mesh(new THREE.CylinderGeometry(f.s / 2, f.s / 2, 3, 40, 1, true), new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.95, side: THREE.DoubleSide, depthTest: false }));
   const disc = new THREE.Mesh(new THREE.BoxGeometry(f.s + 6, 1.2, f.s + 6), new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.45, depthTest: false }));
   const grp = new THREE.Group(); grp.add(ring, disc); grp.renderOrder = 5; ring.renderOrder = 5; disc.renderOrder = 5;
-  const p = surfPose(f, current.g, 1.5); orient(grp, p.n); grp.position.set(...p.c);
+  const p = panelToWorld(r.p, f.x, f.y, current.g, -1.5); orient(grp, p.n); grp.position.set(...p.c);
   ghostGroup.add(grp);
 }
+const HINT = 'Arrastra para girar · rueda o pellizco para zoom · doble clic en una tapa para diseñarla';
 function setFanMode(on) {
   fanMode = on;
   $('fanBtn').setAttribute('aria-pressed', String(on));
   viewer.classList.toggle('placing', on);
-  $('hint').textContent = on ? `Clic en un frontal, trasera, lateral o tapa para poner un ventilador de ${fanSize} mm · clic sobre uno para quitarlo · Esc para terminar`
-    : 'Arrastra para girar · rueda o pellizco para zoom · clic en una pieza para seleccionarla';
+  $('hint').textContent = on ? `Clic en una tapa para poner un ventilador de ${fanSize} mm · clic sobre uno para quitarlo · Esc para terminar` : HINT;
   ghostGroup.clear(); renderer.domElement.style.cursor = on ? 'crosshair' : '';
   if (on && viewMode !== 'asm') setView('asm');
   if (on) select(null);
 }
-function renderFans() {
-  const fans = cfg.fans || [];
-  $('fanList').innerHTML = fans.length ? fans.map((f, i) => `<div class="fanrow"><span class="pill cut">${f.s} mm</span><span>${SURF_NAMES[f.surf]} · ${fanWhere(f)}</span><button type="button" class="icon" data-del="${i}" aria-label="Quitar ventilador">✕</button></div>`).join('')
-    : '<div class="free-u">Sin ventiladores extra. Pulsa «Ventilador» en el visor y haz clic donde lo quieras.</div>';
-  $('fanClear').hidden = fans.length < 2;
-}
-function fanWhere(f) {
-  const g = current.g || derive(cfg);
-  if (f.surf === 'top' || f.surf === 'bottom') return `x ${fmt(f.a)} · y ${fmt(f.b)} mm`;
-  const u = Math.floor((f.b - g.Z0) / U) + 1;
-  return `U${Math.max(1, Math.min(g.NU, u))} · ${f.surf === 'front' || f.surf === 'rear' ? 'x ' + fmt(f.a) : 'fondo ' + fmt(f.a)} mm`;
-}
 $('fanBtn').addEventListener('click', () => setFanMode(!fanMode));
 $('fanSize').addEventListener('change', e => { fanSize = +e.target.value; if (fanMode) setFanMode(true); });
-$('fanList').addEventListener('click', e => { const b = e.target.closest('button[data-del]'); if (!b) return; cfg.fans.splice(+b.dataset.del, 1); changed(); });
-$('fanClear').addEventListener('click', () => { cfg.fans = []; changed(); });
 window.addEventListener('keydown', e => { if (e.key === 'Escape' && fanMode) setFanMode(false); });
 function resize() {
   const w = viewer.clientWidth, h = viewer.clientHeight;
@@ -510,6 +558,142 @@ function resize() {
 }
 new ResizeObserver(resize).observe(viewer);
 renderer.setAnimationLoop(() => { controls.update(); renderer.render(scene, camera); });
+
+// ------------------------------------------------------------------ editor 2D de tapas
+let ed = null;   // { pid, sel }
+const FIELDS = {
+  fan: [['s', 'Tamaño', 'fan']], circle: [['d', 'Diámetro']], rect: [['w', 'Ancho'], ['h', 'Alto'], ['r', 'Radio esquina']],
+  slot: [['w', 'Largo'], ['h', 'Ancho']], slots: [['w', 'Ancho zona'], ['h', 'Alto zona'], ['sw', 'Ancho ranura'], ['pitch', 'Paso'], ['dir', 'Dirección', 'dir']],
+  hex: [['w', 'Ancho zona'], ['h', 'Alto zona'], ['cell', 'Hexágono'], ['web', 'Nervio']],
+  holes: [['w', 'Ancho zona'], ['h', 'Alto zona'], ['d', 'Diámetro'], ['pitch', 'Paso']], keystone: [['n', 'Cantidad', 'int']],
+};
+function edPanel() { return ed && cfg.panels.find(p => p.id === ed.pid); }
+function openEditor(pid) {
+  if (fanMode) setFanMode(false);
+  ed = { pid, sel: -1 };
+  $('editor').hidden = false; document.body.classList.add('modal');
+  renderEditor();
+  $('edDone').focus();
+}
+function closeEditor() { ed = null; $('editor').hidden = true; document.body.classList.remove('modal'); }
+function edChanged() { const p = edPanel(); p.auto = false; save(); renderEditor(); renderControls(); clearTimeout(debounce); debounce = setTimeout(regenerate, 500); }
+function renderEditor() {
+  const p = edPanel(); if (!p) { closeEditor(); return; }
+  const g = derive(cfg), { Lw, Lh } = panelDims(p, g), sa = safeArea(p, g);
+  $('edTitle').textContent = panelLabel(p);
+  $('edSize').textContent = `${fmt(Lw, 1)} × ${fmt(Lh, 1)} mm · vista desde fuera`;
+  const tsel = $('edTpl');
+  tsel.innerHTML = '<option value="">Elegir plantilla…</option>' + Object.entries(TEMPLATES).filter(([k]) => k !== 'patch' || p.side === 'front' || p.side === 'rear').map(([k, n]) => `<option value="${k}">${n}</option>`).join('');
+  const Y = (y) => Lh - y;
+  let ctx = `<rect x="0" y="0" width="${Lw}" height="${Lh}" class="pf"/>`;
+  if (p.side === 'front' || p.side === 'rear') {
+    ctx += `<rect x="0" y="0" width="${g.FL_W}" height="${Lh}" class="zone"/><rect x="${Lw - g.FL_W}" y="0" width="${g.FL_W}" height="${Lh}" class="zone"/>`;
+    for (let u = 0; u < p.nu; u++) for (const hz of g.HOLE_Z) for (const x of [g.HOLE_X, Lw - g.HOLE_X]) ctx += `<rect x="${x - 4.8}" y="${Y(u * U + hz) - 3.3}" width="9.6" height="6.6" rx="3.3" class="hole"/>`;
+    for (const s of cfg.shelves) if (s.u >= p.u0 && s.u < p.u0 + p.nu) for (const x of (g.is19 ? [60, g.W / 2, g.W - 60] : [60, g.W - 60])) ctx += `<circle cx="${x}" cy="${Y((s.u - p.u0) * U + g.TRAY_Z + 8)}" r="1.7" class="hole"/>`;
+  } else if (p.side === 'left' || p.side === 'right') {
+    const z = g.RS + g.RT;
+    ctx += `<rect x="0" y="0" width="${z}" height="${Lh}" class="zone"/><rect x="${Lw - z}" y="0" width="${z}" height="${Lh}" class="zone"/>`;
+    for (let k = 0; k < p.nu; k++) if (k % 2 === 0 || k === p.nu - 1) for (const a of [g.BOLT_Y, Lw - g.BOLT_Y]) ctx += `<circle cx="${a}" cy="${Y((k + 0.5) * U)}" r="2.2" class="hole"/>`;
+  } else {
+    const m = g.RT + g.WALL;
+    ctx += `<rect x="0" y="0" width="${m}" height="${Lh}" class="zone"/><rect x="${Lw - m}" y="0" width="${m}" height="${Lh}" class="zone"/>`;
+    for (const x of [g.CB_X0 + g.CB[0] / 2, Lw - g.CB_X0 - g.CB[0] / 2]) for (const y of [g.CB_Y0 + 19, Lh - g.CB_Y0 - 19]) ctx += `<circle cx="${x}" cy="${Y(y)}" r="2.25" class="hole"/>`;
+    ctx += `<text x="${Lw / 2}" y="${Lh + 14}" class="lbl">frente</text>`;
+  }
+  ctx += `<rect x="${sa.a0}" y="${Y(sa.b1)}" width="${sa.a1 - sa.a0}" height="${sa.b1 - sa.b0}" class="safe"/>`;
+  let shapes = '';
+  p.shapes.forEach((s, i) => {
+    const [w, h] = shapeSize(s);
+    let inner = ''; for (const q of prims(s)) inner += primSvg(q, Lh);
+    shapes += `<g class="shp${i === ed.sel ? ' on' : ''}" data-i="${i}">${inner}<rect class="hit" x="${s.x - w / 2 - 1}" y="${Y(s.y + h / 2) - 1}" width="${w + 2}" height="${h + 2}"/></g>`;
+  });
+  const pad = 18;
+  $('edSvg').setAttribute('viewBox', `${-pad} ${-pad} ${Lw + 2 * pad} ${Lh + 2 * pad + (p.side === 'top' ? 6 : 0)}`);
+  $('edSvg').innerHTML = `<g class="ctx">${ctx}</g><g class="pc">${shapes}</g>`;
+  // propiedades
+  const s = p.shapes[ed.sel];
+  let ph = '';
+  if (s) {
+    ph += `<div class="edhead">${SHAPE_TYPES[s.t]}</div>`;
+    const field = ([k, label, kind]) => {
+      if (kind === 'fan') return `<label>${label}<select data-k="${k}">${Object.keys(FAN_SIZES).map(z => `<option value="${z}"${+z === s.s ? ' selected' : ''}>${z} mm</option>`).join('')}</select></label>`;
+      if (kind === 'dir') return `<label>${label}<select data-k="${k}"><option value="h"${s.dir !== 'v' ? ' selected' : ''}>Horizontales</option><option value="v"${s.dir === 'v' ? ' selected' : ''}>Verticales</option></select></label>`;
+      return `<label>${label}<input type="number" data-k="${k}" step="${kind === 'int' ? 1 : 0.5}" min="${kind === 'int' ? 1 : 0}" value="${s[k]}"></label>`;
+    };
+    ph += [['x', 'Centro a'], ['y', 'Centro b']].map(f => field(f)).join('') + FIELDS[s.t].map(field).join('');
+    ph += `<div class="edbtns"><button type="button" class="btn" data-ed="dup">Duplicar</button><button type="button" class="btn" data-ed="del">Borrar</button></div>`;
+  } else {
+    ph = `<div class="edhead">Diseño</div><p class="sub">${p.shapes.length ? `${p.shapes.length} forma${p.shapes.length > 1 ? 's' : ''}. ` : 'Tapa lisa. '}Añade formas arriba o elige una plantilla. Arrastra para mover, haz clic para editar medidas.</p><p class="sub">La línea discontinua marca la zona útil: lo que salga de ella se recorta para no tocar orejas, raíles ni tornillos.</p>`;
+  }
+  $('edProps').innerHTML = ph;
+}
+$('edAdd').addEventListener('click', e => {
+  const b = e.target.closest('button[data-t]'); if (!b) return;
+  const p = edPanel(), s = defaultShape(b.dataset.t, p, derive(cfg));
+  p.shapes.push(s); ed.sel = p.shapes.length - 1; edChanged();
+});
+$('edTpl').addEventListener('change', e => {
+  const v = e.target.value; if (!v) return;
+  const p = edPanel(); p.tpl = v; p.shapes = templateShapes(v, p, derive(cfg)); ed.sel = -1;
+  edChanged(); p.auto = true; save(); renderControls();
+});
+$('edClear').addEventListener('click', () => { const p = edPanel(); p.shapes = []; ed.sel = -1; edChanged(); });
+$('edDone').addEventListener('click', () => { closeEditor(); changed(); });
+$('editor').addEventListener('click', e => { if (e.target === $('editor')) { closeEditor(); changed(); } });
+$('edProps').addEventListener('change', e => {
+  const el = e.target, k = el.dataset.k; if (!k) return;
+  const p = edPanel(), s = p.shapes[ed.sel]; if (!s) return;
+  if (k === 'dir') s.dir = el.value;
+  else { let v = +el.value; if (isNaN(v)) return; if (k === 'n') v = clamp(Math.round(v), 1, 24); if (k === 's') { const f = fitFan(p, derive(cfg), v, s.x, s.y); if (!f) { toast(`Un ventilador de ${v} mm no cabe en esta tapa.`); renderEditor(); return; } Object.assign(s, f); } else s[k] = Math.max(k === 'x' || k === 'y' || k === 'r' ? -1e4 : 1, v); }
+  edChanged();
+});
+$('edProps').addEventListener('click', e => {
+  const b = e.target.closest('button[data-ed]'); if (!b) return;
+  const p = edPanel(), s = p.shapes[ed.sel]; if (!s) return;
+  if (b.dataset.ed === 'del') { p.shapes.splice(ed.sel, 1); ed.sel = -1; }
+  if (b.dataset.ed === 'dup') { const c = { ...s, x: s.x + 10, y: s.y }; p.shapes.push(c); ed.sel = p.shapes.length - 1; }
+  edChanged();
+});
+let drag = null;
+function svgPoint(e) {
+  const svg = $('edSvg'), pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY;
+  return pt.matrixTransform(svg.getScreenCTM().inverse());
+}
+$('edSvg').addEventListener('pointerdown', e => {
+  const gEl = e.target.closest('g.shp');
+  if (!gEl) { if (ed.sel !== -1) { ed.sel = -1; renderEditor(); } return; }
+  const i = +gEl.dataset.i, p = edPanel(), s = p.shapes[i];
+  ed.sel = i; renderEditor();
+  const el = $('edSvg').querySelector(`g.shp[data-i="${i}"]`);
+  drag = { i, start: svgPoint(e), x0: s.x, y0: s.y, el, moved: false };
+  $('edSvg').setPointerCapture(e.pointerId);
+});
+$('edSvg').addEventListener('pointermove', e => {
+  if (!drag) return;
+  const q = svgPoint(e), dx = q.x - drag.start.x, dy = q.y - drag.start.y;
+  if (Math.hypot(dx, dy) > 0.5) drag.moved = true;
+  drag.el.setAttribute('transform', `translate(${Math.round(dx * 2) / 2} ${Math.round(dy * 2) / 2})`);
+  drag.dx = Math.round(dx * 2) / 2; drag.dy = Math.round(dy * 2) / 2;
+});
+$('edSvg').addEventListener('pointerup', () => {
+  if (!drag) return;
+  const d = drag; drag = null;
+  if (!d.moved) return;
+  const p = edPanel(), s = p.shapes[d.i];
+  s.x = d.x0 + (d.dx || 0); s.y = d.y0 - (d.dy || 0);
+  if (s.t === 'fan') { const f = fitFan(p, derive(cfg), s.s, s.x, s.y); if (f) Object.assign(s, f); }
+  edChanged();
+});
+window.addEventListener('keydown', e => {
+  if (!ed) return;
+  if (e.key === 'Escape') { closeEditor(); changed(); return; }
+  if (/INPUT|SELECT|TEXTAREA/.test(document.activeElement?.tagName)) return;
+  const p = edPanel(), s = p && p.shapes[ed.sel]; if (!s) return;
+  const st = e.shiftKey ? 10 : 1;
+  const mv = { ArrowLeft: [-st, 0], ArrowRight: [st, 0], ArrowUp: [0, st], ArrowDown: [0, -st] }[e.key];
+  if (mv) { s.x += mv[0]; s.y += mv[1]; e.preventDefault(); edChanged(); }
+  if (e.key === 'Delete' || e.key === 'Backspace') { p.shapes.splice(ed.sel, 1); ed.sel = -1; e.preventDefault(); edChanged(); }
+});
 
 // ------------------------------------------------------------------ descargas
 function fileBase(p, pc) { return `${pc.id}__x${p.inst.length}`; }
@@ -526,19 +710,25 @@ async function offer(filename, blob) {
 }
 function readme() {
   const g = current.g, lines = [];
-  lines.push('CONFIGURADOR RACK HOME LAB', '='.repeat(40), '');
+  lines.push('PRINTMYHOMELAB · RACK', '='.repeat(40), '');
   lines.push(`Rack ${cfg.std}" · ${g.NU}U · ancho ${fmt(g.W, 1)} mm · fondo ${g.D} mm · alto total ≈ ${fmt(g.H + 12)} mm`);
+  lines.push(`Raíles: ${cfg.rails === 'metal' ? `metálicos comprados, 4 × ${g.NU}U (${fmt(g.NU * U, 1)} mm)` : 'impresos en L (ver piezas «Raíl»)'}`);
   lines.push(`Cama de impresión: ${cfg.bed.join(' × ')} mm (zona útil ${effBed().join(' × ')} mm, margen ${cfg.bedMargin ?? 0} mm)`, '');
-  lines.push('MÓDULOS (de abajo arriba)');
-  for (const { m, u0 } of moduleLayout(cfg)) lines.push(`  U${u0}${m.u > 1 ? '-' + (u0 + m.u - 1) : ''}  ${MODULE_TYPES[m.type].name}${m.label && m.dev ? ' · ' + m.label + ' ' + m.dev.join('×') + ' mm' : ''}`);
+  lines.push('TAPAS');
+  for (const side of SIDE_ORDER) for (const p of cfg.panels.filter(x => x.side === side).sort((a, b) => a.u0 - b.u0))
+    lines.push(`  ${panelLabel(p)} · ${p.auto ? TEMPLATES[p.tpl] : 'diseño propio'} · ${p.shapes.length} formas`);
+  lines.push('', 'BALDAS (de abajo arriba)');
+  for (const s of [...cfg.shelves].sort((a, b) => a.u - b.u)) lines.push(`  U${s.u}  ${SHELF_TYPES[s.type].name}${s.dev ? ' · ' + (s.label || '') + ' ' + s.dev.join('×') + ' mm' : ''}`);
   lines.push('', 'PIEZAS (el nombre de archivo termina en __xN = imprimir N copias)');
   for (const row of pieceRows()) if (row.pc) lines.push(`  ${row.p.inst.length} × ${row.pc.id}.stl  (${row.pc.size.map(v => fmt(v)).join(' × ')} mm)${row.pc.fits ? '' : '  ¡NO CABE EN LA CAMA!'}`);
   lines.push('', 'TORNILLERÍA');
   for (const [t, n] of hardware(cfg, g, current.parts)) lines.push(`  ${n} × ${t}`);
+  if (cfg.rails === 'metal') { lines.push('', 'DÓNDE COMPRAR RAÍLES'); for (const s of RAIL_SHOPS) lines.push(`  ${s.name}: ${s.url}`); }
   lines.push('', 'NOTAS',
-    '  - Los STL ya vienen orientados para imprimir (cara plana abajo).',
+    '  - Los STL ya vienen orientados para imprimir (cara exterior abajo en las tapas).',
     '  - Las piezas partidas encajan con colas de milano: limpia, prueba en seco y pega con CA o epoxi.',
     '  - PETG o ASA si el rack va a estar caliente; PLA vale para un armario ventilado.',
+    '  - Las bandejas se atornillan con M3 a la tapa frontal y a la trasera de su U.',
     '  - Medidas de equipos aproximadas: mide router, mini PC y agujeros de la placa antes de imprimir.');
   return lines.join('\n');
 }
@@ -560,7 +750,7 @@ async function downloadSelected() {
   const pc = p && current.results.get(p.id)?.pieces[selected.pieceIdx];
   if (!pc) return;
   const stl = stlBinary(printMesh(pc.mesh, p.print, cfg.bed), pc.id);
-  if (window.claude?.use) {   // dentro de claude.ai solo se permite .zip
+  if (window.claude?.use) {
     const zip = new JSZip(); zip.file(fileBase(p, pc) + '.stl', stl);
     await offer(fileBase(p, pc) + '.zip', await zip.generateAsync({ type: 'blob', compression: 'DEFLATE' }));
   } else await offer(fileBase(p, pc) + '.stl', new Blob([stl], { type: 'model/stl' }));
@@ -576,6 +766,7 @@ function setFold(folded) {
 }
 $('fold').addEventListener('click', () => setFold($('fold').getAttribute('aria-expanded') === 'true'));
 try { if (localStorage.getItem('rack-parts-folded') === '1') setFold(true); } catch (e) {}
+$('hint').textContent = HINT;
 initControls();
 renderControls();
 applyTheme();
@@ -583,6 +774,6 @@ resize();
 current = { ...buildPartList({ ...cfg, bed: effBed() }), results: new Map() };
 rebuildScene(); renderParts();
 initKernel().then(k => { K = k; regenerate(); }).catch(e => {
-  console.error(e); setStatus('No se pudo cargar el motor 3D', 0);
+  console.error(e);
   $('sum').innerHTML = '<span class="err">No se pudo cargar el motor de geometría. Recarga la página o ábrela en Chrome, Edge o Firefox.</span>';
 });

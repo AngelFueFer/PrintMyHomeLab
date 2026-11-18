@@ -117,6 +117,64 @@ tr.piece.on td { background: var(--accent-soft); }
 .hwlist li b { font-family: var(--font-mono); color: var(--fg); font-weight: 500; }
 .toast { position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--fg); color: var(--bg); padding: 8px 14px; border-radius: 6px; font-size: 13px; z-index: 20; max-width: calc(100% - 32px); }
 .err { padding: 14px 16px; color: var(--bad); }
+.seg.wide { display: flex; } .seg.wide button { flex: 1; }
+.railinfo { font-size: 12.5px; margin-top: 10px; } .railinfo p { margin: 0 0 6px; }
+.links { margin: 0; padding-left: 18px; } .links li { margin-bottom: 4px; } .links a { color: var(--accent); }
+.plist { display: flex; flex-direction: column; gap: 12px; }
+.pgroup { display: flex; flex-direction: column; gap: 6px; }
+.pghead { display: flex; justify-content: space-between; font-weight: 600; font-size: 13px; }
+.pghead span { font-weight: 400; color: var(--muted); font-size: 12px; font-family: var(--font-mono); }
+.prow { display: grid; grid-template-columns: 54px minmax(0, 1fr); gap: 8px; border: 1px solid var(--line); border-radius: 7px; background: var(--panel-2); padding: 6px 8px 6px 6px; }
+.prow.clash { border-color: var(--bad); }
+.prow .prev { display: grid; place-items: center; }
+.prow .pbody { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.prow .top { display: flex; gap: 6px; align-items: center; }
+.prow .top strong { flex: 1; font-size: 13px; font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.prow .row, .mod .row { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; font-size: 12.5px; color: var(--muted); }
+.prow .row label { display: inline-flex; align-items: center; gap: 5px; }
+.prow .row input[type=number] { width: 52px; padding: 3px 5px; }
+.prow .row select { flex: 1; min-width: 120px; padding: 3px 5px; }
+.row.bad { color: var(--bad); }
+.btn.sm { padding: 3px 9px; font-size: 12.5px; }
+svg .pf { fill: var(--panel); stroke: var(--muted); stroke-width: 1; vector-effect: non-scaling-stroke; }
+.prev svg .pc * { fill: var(--muted); stroke: none; }
+svg .pc .fanbg, .edcanvas .pc .shp .fanbg, .edcanvas .pc .shp.on .fanbg { fill: var(--panel) !important; fill-opacity: 1 !important; }
+.prev svg .fanline { fill: none !important; stroke: var(--panel) !important; stroke-width: 2.5 !important; }
+body.modal { overflow: hidden; }
+.editor { position: fixed; inset: 0; z-index: 30; background: rgba(10, 12, 15, .55); display: grid; place-items: center; padding: 16px; }
+.editor[hidden] { display: none; }
+.edwin { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; width: min(1180px, 100%); height: min(780px, 100%); display: grid; grid-template-rows: auto auto minmax(0, 1fr); overflow: hidden; }
+.edtop { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 12px 16px; border-bottom: 1px solid var(--line); }
+.edtop > div:first-child { flex: 1 1 200px; min-width: 0; }
+.edtop h2 { font-family: var(--font-display); font-size: 18px; margin: 0; }
+.edadd { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 8px 16px; border-bottom: 1px solid var(--line); background: var(--panel-2); }
+.edbody { display: grid; grid-template-columns: minmax(0, 1fr) 260px; min-height: 0; }
+.edcanvas { background: var(--view); min-height: 0; padding: 12px; display: flex; }
+.edcanvas svg { width: 100%; height: 100%; touch-action: none; user-select: none; }
+.edcanvas .zone { fill: var(--line); opacity: .7; }
+.edcanvas .hole { fill: var(--view); stroke: var(--muted); stroke-width: 1; vector-effect: non-scaling-stroke; }
+.edcanvas .safe { fill: none; stroke: var(--accent); stroke-width: 1.2; stroke-dasharray: 5 4; vector-effect: non-scaling-stroke; }
+.edcanvas .lbl { font: 9px var(--font-mono); fill: var(--muted); text-anchor: middle; }
+.edcanvas .pc .shp { cursor: grab; }
+.edcanvas .pc .shp * { fill: var(--fg); fill-opacity: .82; }
+.edcanvas .pc .shp .fanring { fill: var(--fg); }
+.edcanvas .pc .shp .fanline { fill: none; stroke: var(--view); stroke-width: 2.4; }
+.edcanvas .pc .shp .hit { fill: transparent; fill-opacity: 0; stroke: none; }
+.edcanvas .pc .shp:hover .hit { stroke: var(--accent); stroke-width: 1; stroke-dasharray: 3 3; vector-effect: non-scaling-stroke; }
+.edcanvas .pc .shp.on * { fill: var(--accent); }
+.edcanvas .pc .shp.on .fanline { fill: none; stroke: var(--view); }
+.edcanvas .pc .shp.on .hit { fill: transparent; stroke: var(--accent); stroke-width: 1.5; vector-effect: non-scaling-stroke; }
+.edprops { border-left: 1px solid var(--line); padding: 14px 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; font-size: 13px; }
+.edprops .edhead { font-family: var(--font-display); font-weight: 700; font-size: 14px; }
+.edprops label { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 8px; }
+.edprops .edbtns { display: flex; gap: 8px; margin-top: 6px; }
+.edprops p { margin: 0; }
+@media (max-width: 760px) {
+  .editor { padding: 0; }
+  .edwin { border-radius: 0; height: 100%; }
+  .edbody { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(220px, 1fr) auto; }
+  .edprops { border-left: 0; border-top: 1px solid var(--line); max-height: 40vh; }
+}
 @media (max-width: 860px) {
   html, body { height: auto; }
   .app { grid-template-columns: minmax(0, 1fr); height: auto; }
@@ -134,7 +192,7 @@ tr.piece.on td { background: var(--accent-soft); }
   <aside class="side" id="side">
     <div class="brand">
       <h1>PrintMyHomeLab</h1>
-      <p>Mini-rack impreso con raíles metálicos. Ajusta medidas y módulos, revisa en 3D y descarga los STL ya partidos para tu impresora.</p>
+      <p>Elige los raíles, pon las tapas que quieras con su diseño y coloca las baldas donde las necesites. Descarga los STL ya partidos para tu impresora.</p>
     </div>
     <div class="dims" id="dims"></div>
 
@@ -143,28 +201,36 @@ tr.piece.on td { background: var(--accent-soft); }
       <div class="field"><label>Estándar</label>
         <div class="seg" id="std"><button type="button" data-v="10" aria-pressed="true">10″</button><button type="button" data-v="19" aria-pressed="false">19″</button></div>
       </div>
+      <div class="field"><label for="NU">Alto (U)</label><input type="number" id="NU" min="1" max="42" step="1"></div>
       <div class="field"><label for="depth">Fondo (mm)</label><input type="number" id="depth" min="180" max="450" step="5">
         <input type="range" id="depthR" min="180" max="450" step="5" aria-label="Fondo">
       </div>
-      <div class="field"><label for="extraU">U libres arriba</label><input type="number" id="extraU" min="0" max="12" step="1">
-        <small>Hueco de reserva para crecer. Sube la altura sin añadir piezas de módulo.</small></div>
-      <div class="field"><label for="wall">Grosor de pared lateral (mm)</label><input type="number" id="wall" min="2.4" max="5" step="0.2"></div>
-      <div class="field"><label for="faceT">Grosor de frontales (mm)</label><input type="number" id="faceT" min="3" max="6" step="0.5"></div>
+      <div class="field"><label for="wall">Grosor de laterales (mm)</label><input type="number" id="wall" min="2.4" max="5" step="0.2"></div>
+      <div class="field"><label for="faceT">Grosor de tapas frontales (mm)</label><input type="number" id="faceT" min="3" max="6" step="0.5"></div>
     </section>
 
     <section>
-      <h2>Módulos, de arriba abajo</h2>
-      <div class="stack" id="stack"></div>
+      <h2>Raíles de esquina</h2>
+      <div class="seg wide" id="rails"><button type="button" data-v="metal" aria-pressed="true">Metálicos (comprar)</button><button type="button" data-v="print" aria-pressed="false">Impresos</button></div>
+      <div class="railinfo" id="railInfo"></div>
+    </section>
+
+    <section>
+      <h2>Tapas</h2>
+      <div class="plist" id="panelList"></div>
       <div class="addrow" style="margin-top:10px">
-        <select id="addType" aria-label="Tipo de módulo"></select>
-        <button type="button" class="btn" id="addBtn">Añadir arriba</button>
+        <select id="addSide" aria-label="Lado de la tapa"></select>
+        <button type="button" class="btn" id="addPanel">Añadir tapa</button>
       </div>
     </section>
 
     <section>
-      <h2>Ventiladores extra</h2>
-      <div class="fanlist" id="fanList"></div>
-      <button type="button" class="btn" id="fanClear" style="margin-top:8px" hidden>Quitar todos</button>
+      <h2>Baldas, de arriba abajo</h2>
+      <div class="stack" id="shelfList"></div>
+      <div class="addrow" style="margin-top:10px">
+        <select id="addShelfType" aria-label="Tipo de balda"></select>
+        <button type="button" class="btn" id="addShelf">Añadir balda</button>
+      </div>
     </section>
 
     <section>
@@ -178,10 +244,8 @@ tr.piece.on td { background: var(--accent-soft); }
         <small id="bedEff"></small></div>
     </section>
 
-    <div id="warnSec" hidden><div id="warns"></div></div>
-
     <section>
-      <button type="button" class="btn" id="reset">Volver al diseño de Angel</button>
+      <button type="button" class="btn" id="reset">Volver al diseño inicial</button>
     </section>
   </aside>
 
@@ -196,11 +260,9 @@ tr.piece.on td { background: var(--accent-soft); }
         <select id="fanSize" aria-label="Tamaño del ventilador"><option value="40">40 mm</option><option value="60">60 mm</option><option value="80" selected>80 mm</option><option value="92">92 mm</option><option value="120">120 mm</option><option value="140">140 mm</option></select></span>
       <label class="chk"><input type="checkbox" id="showDevices"> Equipos</label>
       <label class="chk"><input type="checkbox" id="showRails"> Raíles</label>
-      <div class="status" hidden><span id="status">Cargando motor 3D…</span><span class="bar"><i id="barI"></i></span></div>
     </div>
     <div class="viewer" id="viewer">
-      <div class="sel" id="selBox" hidden></div>
-      <div class="hint" id="hint">Arrastra para girar · rueda o pellizco para zoom · clic en una pieza para seleccionarla</div>
+      <div class="hint" id="hint"></div>
     </div>
     <div class="parts">
       <div class="head">
@@ -216,6 +278,31 @@ tr.piece.on td { background: var(--accent-soft); }
       </div>
     </div>
   </main>
+</div>
+<div class="editor" id="editor" hidden role="dialog" aria-modal="true" aria-labelledby="edTitle">
+  <div class="edwin">
+    <div class="edtop">
+      <div><h2 id="edTitle">Tapa</h2><div class="sub" id="edSize"></div></div>
+      <select id="edTpl" aria-label="Plantilla"></select>
+      <button type="button" class="btn" id="edClear">Dejar lisa</button>
+      <button type="button" class="btn primary" id="edDone">Listo</button>
+    </div>
+    <div class="edadd" id="edAdd">
+      <span class="sub">Añadir:</span>
+      <button type="button" class="btn sm" data-t="fan">Ventilador</button>
+      <button type="button" class="btn sm" data-t="circle">Agujero</button>
+      <button type="button" class="btn sm" data-t="rect">Rectángulo</button>
+      <button type="button" class="btn sm" data-t="slot">Ranura</button>
+      <button type="button" class="btn sm" data-t="slots">Ranuras</button>
+      <button type="button" class="btn sm" data-t="hex">Panal</button>
+      <button type="button" class="btn sm" data-t="holes">Rejilla</button>
+      <button type="button" class="btn sm" data-t="keystone">Keystone</button>
+    </div>
+    <div class="edbody">
+      <div class="edcanvas"><svg id="edSvg" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet"></svg></div>
+      <div class="edprops" id="edProps"></div>
+    </div>
+  </div>
 </div>
 <div class="toast" id="toast" hidden></div>
 

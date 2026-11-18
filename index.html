@@ -125,6 +125,64 @@ tr.piece.on td { background: var(--accent-soft); }
 .hwlist li b { font-family: var(--font-mono); color: var(--fg); font-weight: 500; }
 .toast { position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--fg); color: var(--bg); padding: 8px 14px; border-radius: 6px; font-size: 13px; z-index: 20; max-width: calc(100% - 32px); }
 .err { padding: 14px 16px; color: var(--bad); }
+.seg.wide { display: flex; } .seg.wide button { flex: 1; }
+.railinfo { font-size: 12.5px; margin-top: 10px; } .railinfo p { margin: 0 0 6px; }
+.links { margin: 0; padding-left: 18px; } .links li { margin-bottom: 4px; } .links a { color: var(--accent); }
+.plist { display: flex; flex-direction: column; gap: 12px; }
+.pgroup { display: flex; flex-direction: column; gap: 6px; }
+.pghead { display: flex; justify-content: space-between; font-weight: 600; font-size: 13px; }
+.pghead span { font-weight: 400; color: var(--muted); font-size: 12px; font-family: var(--font-mono); }
+.prow { display: grid; grid-template-columns: 54px minmax(0, 1fr); gap: 8px; border: 1px solid var(--line); border-radius: 7px; background: var(--panel-2); padding: 6px 8px 6px 6px; }
+.prow.clash { border-color: var(--bad); }
+.prow .prev { display: grid; place-items: center; }
+.prow .pbody { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.prow .top { display: flex; gap: 6px; align-items: center; }
+.prow .top strong { flex: 1; font-size: 13px; font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.prow .row, .mod .row { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; font-size: 12.5px; color: var(--muted); }
+.prow .row label { display: inline-flex; align-items: center; gap: 5px; }
+.prow .row input[type=number] { width: 52px; padding: 3px 5px; }
+.prow .row select { flex: 1; min-width: 120px; padding: 3px 5px; }
+.row.bad { color: var(--bad); }
+.btn.sm { padding: 3px 9px; font-size: 12.5px; }
+svg .pf { fill: var(--panel); stroke: var(--muted); stroke-width: 1; vector-effect: non-scaling-stroke; }
+.prev svg .pc * { fill: var(--muted); stroke: none; }
+svg .pc .fanbg, .edcanvas .pc .shp .fanbg, .edcanvas .pc .shp.on .fanbg { fill: var(--panel) !important; fill-opacity: 1 !important; }
+.prev svg .fanline { fill: none !important; stroke: var(--panel) !important; stroke-width: 2.5 !important; }
+body.modal { overflow: hidden; }
+.editor { position: fixed; inset: 0; z-index: 30; background: rgba(10, 12, 15, .55); display: grid; place-items: center; padding: 16px; }
+.editor[hidden] { display: none; }
+.edwin { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; width: min(1180px, 100%); height: min(780px, 100%); display: grid; grid-template-rows: auto auto minmax(0, 1fr); overflow: hidden; }
+.edtop { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 12px 16px; border-bottom: 1px solid var(--line); }
+.edtop > div:first-child { flex: 1 1 200px; min-width: 0; }
+.edtop h2 { font-family: var(--font-display); font-size: 18px; margin: 0; }
+.edadd { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 8px 16px; border-bottom: 1px solid var(--line); background: var(--panel-2); }
+.edbody { display: grid; grid-template-columns: minmax(0, 1fr) 260px; min-height: 0; }
+.edcanvas { background: var(--view); min-height: 0; padding: 12px; display: flex; }
+.edcanvas svg { width: 100%; height: 100%; touch-action: none; user-select: none; }
+.edcanvas .zone { fill: var(--line); opacity: .7; }
+.edcanvas .hole { fill: var(--view); stroke: var(--muted); stroke-width: 1; vector-effect: non-scaling-stroke; }
+.edcanvas .safe { fill: none; stroke: var(--accent); stroke-width: 1.2; stroke-dasharray: 5 4; vector-effect: non-scaling-stroke; }
+.edcanvas .lbl { font: 9px var(--font-mono); fill: var(--muted); text-anchor: middle; }
+.edcanvas .pc .shp { cursor: grab; }
+.edcanvas .pc .shp * { fill: var(--fg); fill-opacity: .82; }
+.edcanvas .pc .shp .fanring { fill: var(--fg); }
+.edcanvas .pc .shp .fanline { fill: none; stroke: var(--view); stroke-width: 2.4; }
+.edcanvas .pc .shp .hit { fill: transparent; fill-opacity: 0; stroke: none; }
+.edcanvas .pc .shp:hover .hit { stroke: var(--accent); stroke-width: 1; stroke-dasharray: 3 3; vector-effect: non-scaling-stroke; }
+.edcanvas .pc .shp.on * { fill: var(--accent); }
+.edcanvas .pc .shp.on .fanline { fill: none; stroke: var(--view); }
+.edcanvas .pc .shp.on .hit { fill: transparent; stroke: var(--accent); stroke-width: 1.5; vector-effect: non-scaling-stroke; }
+.edprops { border-left: 1px solid var(--line); padding: 14px 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; font-size: 13px; }
+.edprops .edhead { font-family: var(--font-display); font-weight: 700; font-size: 14px; }
+.edprops label { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 8px; }
+.edprops .edbtns { display: flex; gap: 8px; margin-top: 6px; }
+.edprops p { margin: 0; }
+@media (max-width: 760px) {
+  .editor { padding: 0; }
+  .edwin { border-radius: 0; height: 100%; }
+  .edbody { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(220px, 1fr) auto; }
+  .edprops { border-left: 0; border-top: 1px solid var(--line); max-height: 40vh; }
+}
 @media (max-width: 860px) {
   html, body { height: auto; }
   .app { grid-template-columns: minmax(0, 1fr); height: auto; }
@@ -142,7 +200,7 @@ tr.piece.on td { background: var(--accent-soft); }
   <aside class="side" id="side">
     <div class="brand">
       <h1>PrintMyHomeLab</h1>
-      <p>Mini-rack impreso con raíles metálicos. Ajusta medidas y módulos, revisa en 3D y descarga los STL ya partidos para tu impresora.</p>
+      <p>Elige los raíles, pon las tapas que quieras con su diseño y coloca las baldas donde las necesites. Descarga los STL ya partidos para tu impresora.</p>
     </div>
     <div class="dims" id="dims"></div>
 
@@ -151,28 +209,36 @@ tr.piece.on td { background: var(--accent-soft); }
       <div class="field"><label>Estándar</label>
         <div class="seg" id="std"><button type="button" data-v="10" aria-pressed="true">10″</button><button type="button" data-v="19" aria-pressed="false">19″</button></div>
       </div>
+      <div class="field"><label for="NU">Alto (U)</label><input type="number" id="NU" min="1" max="42" step="1"></div>
       <div class="field"><label for="depth">Fondo (mm)</label><input type="number" id="depth" min="180" max="450" step="5">
         <input type="range" id="depthR" min="180" max="450" step="5" aria-label="Fondo">
       </div>
-      <div class="field"><label for="extraU">U libres arriba</label><input type="number" id="extraU" min="0" max="12" step="1">
-        <small>Hueco de reserva para crecer. Sube la altura sin añadir piezas de módulo.</small></div>
-      <div class="field"><label for="wall">Grosor de pared lateral (mm)</label><input type="number" id="wall" min="2.4" max="5" step="0.2"></div>
-      <div class="field"><label for="faceT">Grosor de frontales (mm)</label><input type="number" id="faceT" min="3" max="6" step="0.5"></div>
+      <div class="field"><label for="wall">Grosor de laterales (mm)</label><input type="number" id="wall" min="2.4" max="5" step="0.2"></div>
+      <div class="field"><label for="faceT">Grosor de tapas frontales (mm)</label><input type="number" id="faceT" min="3" max="6" step="0.5"></div>
     </section>
 
     <section>
-      <h2>Módulos, de arriba abajo</h2>
-      <div class="stack" id="stack"></div>
+      <h2>Raíles de esquina</h2>
+      <div class="seg wide" id="rails"><button type="button" data-v="metal" aria-pressed="true">Metálicos (comprar)</button><button type="button" data-v="print" aria-pressed="false">Impresos</button></div>
+      <div class="railinfo" id="railInfo"></div>
+    </section>
+
+    <section>
+      <h2>Tapas</h2>
+      <div class="plist" id="panelList"></div>
       <div class="addrow" style="margin-top:10px">
-        <select id="addType" aria-label="Tipo de módulo"></select>
-        <button type="button" class="btn" id="addBtn">Añadir arriba</button>
+        <select id="addSide" aria-label="Lado de la tapa"></select>
+        <button type="button" class="btn" id="addPanel">Añadir tapa</button>
       </div>
     </section>
 
     <section>
-      <h2>Ventiladores extra</h2>
-      <div class="fanlist" id="fanList"></div>
-      <button type="button" class="btn" id="fanClear" style="margin-top:8px" hidden>Quitar todos</button>
+      <h2>Baldas, de arriba abajo</h2>
+      <div class="stack" id="shelfList"></div>
+      <div class="addrow" style="margin-top:10px">
+        <select id="addShelfType" aria-label="Tipo de balda"></select>
+        <button type="button" class="btn" id="addShelf">Añadir balda</button>
+      </div>
     </section>
 
     <section>
@@ -186,10 +252,8 @@ tr.piece.on td { background: var(--accent-soft); }
         <small id="bedEff"></small></div>
     </section>
 
-    <div id="warnSec" hidden><div id="warns"></div></div>
-
     <section>
-      <button type="button" class="btn" id="reset">Volver al diseño de Angel</button>
+      <button type="button" class="btn" id="reset">Volver al diseño inicial</button>
     </section>
   </aside>
 
@@ -204,11 +268,9 @@ tr.piece.on td { background: var(--accent-soft); }
         <select id="fanSize" aria-label="Tamaño del ventilador"><option value="40">40 mm</option><option value="60">60 mm</option><option value="80" selected>80 mm</option><option value="92">92 mm</option><option value="120">120 mm</option><option value="140">140 mm</option></select></span>
       <label class="chk"><input type="checkbox" id="showDevices"> Equipos</label>
       <label class="chk"><input type="checkbox" id="showRails"> Raíles</label>
-      <div class="status" hidden><span id="status">Cargando motor 3D…</span><span class="bar"><i id="barI"></i></span></div>
     </div>
     <div class="viewer" id="viewer">
-      <div class="sel" id="selBox" hidden></div>
-      <div class="hint" id="hint">Arrastra para girar · rueda o pellizco para zoom · clic en una pieza para seleccionarla</div>
+      <div class="hint" id="hint"></div>
     </div>
     <div class="parts">
       <div class="head">
@@ -225,6 +287,31 @@ tr.piece.on td { background: var(--accent-soft); }
     </div>
   </main>
 </div>
+<div class="editor" id="editor" hidden role="dialog" aria-modal="true" aria-labelledby="edTitle">
+  <div class="edwin">
+    <div class="edtop">
+      <div><h2 id="edTitle">Tapa</h2><div class="sub" id="edSize"></div></div>
+      <select id="edTpl" aria-label="Plantilla"></select>
+      <button type="button" class="btn" id="edClear">Dejar lisa</button>
+      <button type="button" class="btn primary" id="edDone">Listo</button>
+    </div>
+    <div class="edadd" id="edAdd">
+      <span class="sub">Añadir:</span>
+      <button type="button" class="btn sm" data-t="fan">Ventilador</button>
+      <button type="button" class="btn sm" data-t="circle">Agujero</button>
+      <button type="button" class="btn sm" data-t="rect">Rectángulo</button>
+      <button type="button" class="btn sm" data-t="slot">Ranura</button>
+      <button type="button" class="btn sm" data-t="slots">Ranuras</button>
+      <button type="button" class="btn sm" data-t="hex">Panal</button>
+      <button type="button" class="btn sm" data-t="holes">Rejilla</button>
+      <button type="button" class="btn sm" data-t="keystone">Keystone</button>
+    </div>
+    <div class="edbody">
+      <div class="edcanvas"><svg id="edSvg" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet"></svg></div>
+      <div class="edprops" id="edProps"></div>
+    </div>
+  </div>
+</div>
 <div class="toast" id="toast" hidden></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -237,46 +324,96 @@ tr.piece.on td { background: var(--accent-soft); }
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 // ===================================================================
-//  Geometría paramétrica del mini-rack (port del rack10_homelab.scad)
+//  Geometría paramétrica del mini-rack v2
+//  Raíles de esquina + tapas independientes (diseño 2D) + baldas libres
 //  Ejes: X ancho (0 = lateral izq.), Y fondo (0 = frente), Z alto. mm.
 // ===================================================================
 const U = 44.45;
 
-const MODULE_TYPES = {
-  storage: { name: 'Almacenamiento + ventilador 80 mm', short: 'Almacenamiento', minU: 3, fixedU: false, tray: true },
-  compute: { name: 'Placa base vertical + fuente SFX', short: 'Cómputo', minU: 6, fixedU: false, tray: true },
-  mini:    { name: 'Mini PC en bandeja', short: 'Mini PC', minU: 1, fixedU: false, tray: true },
-  router:  { name: 'Router / switch en bandeja', short: 'Router', minU: 1, fixedU: false, tray: true },
-  shelf:   { name: 'Bandeja genérica', short: 'Bandeja', minU: 1, fixedU: false, tray: true },
-  patch:   { name: 'Patch panel keystone', short: 'Patch panel', minU: 1, fixedU: true, tray: false },
-  blank:   { name: 'Tapa ventilada', short: 'Tapa', minU: 1, fixedU: false, tray: false },
+const SIDES = { front: 'Frontal', rear: 'Trasera', left: 'Lateral izquierdo', right: 'Lateral derecho', top: 'Tapa superior' };
+const SIDE_SHORT = { front: 'Frontal', rear: 'Trasera', left: 'Lat. izq.', right: 'Lat. der.', top: 'Superior' };
+
+const TEMPLATES = {
+  lisa: 'Lisa',
+  ranuras: 'Ranuras',
+  panal: 'Panal hexagonal',
+  agujeros: 'Rejilla de agujeros',
+  ventilador: 'Ventilador centrado',
+  vent_ranuras: 'Ventilador + ranuras',
+  ventana: 'Ventana / paso de cables',
+  patch: 'Patch panel (keystone)',
 };
 
-function defaultModule(type) {
-  switch (type) {
-    case 'storage': return { type, u: 3, hdd: 3, ssd: 2 };
-    case 'compute': return { type, u: 6, ssd: 6, button: true };
-    case 'mini':    return { type, u: 2, dev: [177, 175, 34], label: 'Mini PC' };
-    case 'router':  return { type, u: 2, dev: [220, 160, 40], label: 'Router' };
-    case 'shelf':   return { type, u: 2, dev: [150, 150, 40], label: 'Equipo' };
-    case 'patch':   return { type, u: 1, keystones: 8 };
-    case 'blank':   return { type, u: 1 };
-  }
+const SHAPE_TYPES = {
+  fan: 'Ventilador', circle: 'Agujero redondo', rect: 'Rectángulo', slot: 'Ranura',
+  slots: 'Zona de ranuras', hex: 'Zona de panal', holes: 'Rejilla de agujeros', keystone: 'Keystones',
+};
+
+const SHELF_TYPES = {
+  bandeja: { name: 'Bandeja genérica', short: 'Bandeja' },
+  mini: { name: 'Mini PC con topes', short: 'Mini PC' },
+  router: { name: 'Router / switch', short: 'Router' },
+  discos: { name: 'Discos 3,5″ y 2,5″', short: 'Discos' },
+  placa: { name: 'Placa base vertical + fuente SFX', short: 'Placa base' },
+};
+
+const FAN_SIZES = { 40: 32, 60: 50, 80: 71.5, 92: 82.5, 120: 105, 140: 124.5 };
+
+let _n = 0;
+const uid = () => Math.random().toString(36).slice(2, 6) + (_n++).toString(36);
+const r05 = (v) => Math.round(v * 2) / 2;
+
+function defaultShelf(type, u) {
+  const s = { id: uid(), u, type };
+  if (type === 'bandeja') Object.assign(s, { dev: [150, 150, 40], label: 'Equipo' });
+  if (type === 'mini') Object.assign(s, { dev: [177, 175, 34], label: 'Mini PC' });
+  if (type === 'router') Object.assign(s, { dev: [220, 160, 40], label: 'Router' });
+  if (type === 'discos') Object.assign(s, { hdd: 3, ssd: 2 });
+  if (type === 'placa') Object.assign(s, { ssd: 4 });
+  return s;
 }
 
 function defaultConfig() {
-  return {
-    std: '10', depth: 250, extraU: 0, wall: 3, faceT: 4,
+  const cfg = {
+    v: 2, std: '10', depth: 250, NU: 14, wall: 3, faceT: 4, rails: 'metal',
     bed: [250, 220, 256], bedPreset: 'mine', bedMargin: 2,
-    showDevices: true, showRails: true, fans: [],
-    modules: [ // de abajo arriba
-      defaultModule('storage'), defaultModule('compute'),
-      { ...defaultModule('mini'), label: 'HP EliteDesk 800 Mini' },
-      { ...defaultModule('router'), label: 'Router Digi' },
-      defaultModule('patch'),
+    showDevices: true, showRails: true,
+    shelves: [
+      defaultShelf('discos', 1), defaultShelf('placa', 4),
+      { ...defaultShelf('mini', 10), label: 'HP EliteDesk 800 Mini' },
+      { ...defaultShelf('router', 12), label: 'Router Digi' },
     ],
+    panels: [],
   };
+  cfg.panels = defaultPanels(cfg);
+  return cfg;
 }
+
+function makePanel(cfg, side, u0, nu, tpl) {
+  const p = { id: uid(), side, u0, nu, tpl, auto: true, shapes: [] };
+  p.shapes = templateShapes(tpl, p, derive(cfg));
+  return p;
+}
+
+function defaultPanels(cfg) {
+  const g = derive(cfg);
+  const P = [];
+  const ranges = g.NU === 14
+    ? [[1, 3, 'vent_ranuras'], [4, 3, 'ranuras'], [7, 3, 'ranuras'], [10, 2, 'ventana'], [12, 2, 'ventana'], [14, 1, 'patch']]
+    : chunks(g.NU, 3).map(([u0, n]) => [u0, n, 'ranuras']);
+  for (const [u0, n, t] of ranges) P.push(makePanel(cfg, 'front', u0, n, t));
+  for (const [u0, n] of ranges) P.push(makePanel(cfg, 'rear', u0, n, 'ventana'));
+  const ecfg = { ...cfg, bed: [cfg.bed[0] - 2 * (cfg.bedMargin || 0), cfg.bed[1] - 2 * (cfg.bedMargin || 0), cfg.bed[2]] };
+  let u = 1;
+  for (const n of wallSegments(ecfg, g)) {
+    P.push(makePanel(cfg, 'left', u, n, 'ranuras'));
+    P.push(makePanel(cfg, 'right', u, n, 'ranuras'));
+    u += n;
+  }
+  P.push(makePanel(cfg, 'top', 1, 1, 'ranuras'));
+  return P;
+}
+function chunks(N, k) { const out = []; let u = 1; while (u <= N) { const n = Math.min(k, N - u + 1); out.push([u, n]); u += n; } return out; }
 
 function derive(cfg) {
   const is19 = cfg.std === '19';
@@ -284,15 +421,16 @@ function derive(cfg) {
   const OPEN = is19 ? 450.85 : 222.25;
   const HOLE_X = (W - (is19 ? 465.1 : 236.525)) / 2;
   const D = cfg.depth;
-  const NU = cfg.modules.reduce((s, m) => s + m.u, 0) + (cfg.extraU || 0);
-  const RF = 15.8, RS = 20, RT = 2, SQ = 9.5, WALL = cfg.wall || 3, PLATE_T = 8, POCKET = 3, TOL = 0.3;
+  const NU = Math.max(1, Math.round(cfg.NU || 1));
+  const printed = cfg.rails === 'print';
+  const RF = 15.8, RS = 20, RT = printed ? 5 : 2, SQ = 9.5, WALL = cfg.wall || 3, PLATE_T = 8, POCKET = 3, TOL = 0.3;
   const FL_W = (W - OPEN) / 2;
   const CB_X0 = RT + WALL + 0.3, CB_Y0 = 9;
   const CB = [RF - CB_X0, 26, 30];
   const Z0 = PLATE_T - POCKET;
-  return { is19, W, OPEN, HOLE_X, D, NU, RF, RS, RT, SQ, WALL, PLATE_T, POCKET, TOL, FL_W, CB_X0, CB_Y0, CB, Z0,
+  return { is19, W, OPEN, HOLE_X, D, NU, RF, RS, RT, SQ, WALL, PLATE_T, POCKET, TOL, FL_W, CB_X0, CB_Y0, CB, Z0, printed,
     BOLT_Y: 15, M6_D: 6.6, HOLE_Z: [6.35, 22.225, 38.1], FT: cfg.faceT || 4, TRAY_Z: 4,
-    uz: (u) => Z0 + (u - 1) * U, H: Z0 + NU * U - POCKET + PLATE_T };
+    uz: (u) => Z0 + (u - 1) * U, H: Z0 + NU * U - POCKET + PLATE_T, TOPZ: Z0 + NU * U - POCKET };
 }
 
 const MB = [244, 244];
@@ -300,6 +438,186 @@ const MB_HOLES = [[35,10],[79,10],[236.5,27],[12,165],[79,165],[236.5,165],[79,2
 const SFX = [125, 100, 63.5];
 const HDD_MOD = [112, 165, 34], SSD_MOD = [80, 110, 15];
 const STANDOFF = 8, MB_Z0 = 10;
+
+// ------------------------------------------------------------------
+//  Tapas: medidas, zona útil y plantillas (coordenadas 2D a,b vistas desde fuera)
+// ------------------------------------------------------------------
+function panelDims(p, g) {
+  if (p.side === 'front' || p.side === 'rear') return { Lw: g.W, Lh: p.nu * U - 0.8 };
+  if (p.side === 'left' || p.side === 'right') return { Lw: g.D, Lh: p.nu * U };
+  return { Lw: g.W, Lh: g.D };
+}
+function safeArea(p, g) {
+  const { Lw, Lh } = panelDims(p, g);
+  if (p.side === 'front' || p.side === 'rear') return { a0: g.FL_W + 4, a1: Lw - g.FL_W - 4, b0: 5, b1: Lh - 5 };
+  if (p.side === 'left' || p.side === 'right') return { a0: g.RS + g.RT + 6, a1: Lw - g.RS - g.RT - 6, b0: 8, b1: Lh - 8 };
+  const m = g.RT + g.WALL + 20;
+  return { a0: m, a1: Lw - m, b0: 45, b1: Lh - 45 };
+}
+
+function templateShapes(tpl, p, g) {
+  const { a0, a1, b0, b1 } = safeArea(p, g);
+  const w = a1 - a0, h = b1 - b0, cx = r05((a0 + a1) / 2), cy = r05((b0 + b1) / 2);
+  if (w < 12 || h < 8) return [];
+  const fitFan = (maxd) => [140, 120, 92, 80, 60, 40].find(s => s + 2 <= maxd);
+  switch (tpl) {
+    case 'ranuras': return [{ t: 'slots', x: cx, y: cy, w: r05(w - 8), h: r05(h - 2), sw: 6, pitch: 13, dir: 'h' }];
+    case 'panal': return [{ t: 'hex', x: cx, y: cy, w: r05(w - 4), h: r05(h - 2), cell: 10, web: 2.4 }];
+    case 'agujeros': return [{ t: 'holes', x: cx, y: cy, w: r05(w - 4), h: r05(h - 2), d: 5, pitch: 8 }];
+    case 'ventilador': { const s = fitFan(Math.min(w, h)); return s ? [{ t: 'fan', x: cx, y: cy, s }] : []; }
+    case 'vent_ranuras': {
+      const s = fitFan(Math.min(w * 0.55, h));
+      if (!s) return templateShapes('ranuras', p, g);
+      const fx = r05(a1 - s / 2 - 6);
+      const out = [{ t: 'fan', x: fx, y: cy, s }];
+      const sw = fx - s / 2 - 10 - a0;
+      if (sw > 20) out.push({ t: 'slots', x: r05(a0 + 2 + sw / 2), y: cy, w: r05(sw), h: r05(h - 2), sw: 6, pitch: 13, dir: 'h' });
+      return out;
+    }
+    case 'ventana': return [{ t: 'rect', x: cx, y: cy, w: r05(w - 10), h: r05(Math.max(6, h - 6)), r: 4 }];
+    case 'patch': { const n = Math.max(1, Math.min(8, Math.floor((w - 10) / 25))); return h >= 18 ? [{ t: 'keystone', x: cx, y: cy, n }] : []; }
+    default: return [];
+  }
+}
+
+// Primitivas 2D de una forma (se usan para dibujar el SVG y para el CSG)
+//  {k:'c',x,y,d} círculo · {k:'r',x,y,w,h,r} rectángulo redondeado centrado · {k:'p',pts} polígono · {k:'f',x,y,s} ventilador
+function prims(s) {
+  switch (s.t) {
+    case 'circle': return [{ k: 'c', x: s.x, y: s.y, d: s.d }];
+    case 'rect': return [{ k: 'r', x: s.x, y: s.y, w: s.w, h: s.h, r: Math.max(0, Math.min(s.r || 0, s.w / 2, s.h / 2)) }];
+    case 'slot': return [{ k: 'r', x: s.x, y: s.y, w: s.w, h: s.h, r: Math.min(s.w, s.h) / 2 }];
+    case 'slots': {
+      const out = [], vert = s.dir === 'v', L = vert ? s.w : s.h, pitch = Math.max(s.sw + 1.2, s.pitch);
+      const n = Math.max(0, Math.floor((L - s.sw) / pitch) + 1), off = (n - 1) * pitch / 2;
+      for (let i = 0; i < n; i++) {
+        const o = -off + i * pitch;
+        out.push(vert ? { k: 'r', x: s.x + o, y: s.y, w: s.sw, h: s.h, r: s.sw / 2 } : { k: 'r', x: s.x, y: s.y + o, w: s.w, h: s.sw, r: s.sw / 2 });
+      }
+      return out;
+    }
+    case 'holes': {
+      const out = [], pitch = Math.max(s.d + 1.2, s.pitch);
+      const nx = Math.max(0, Math.floor((s.w - s.d) / pitch) + 1), ny = Math.max(0, Math.floor((s.h - s.d) / pitch) + 1);
+      for (let i = 0; i < nx; i++) for (let j = 0; j < ny; j++)
+        out.push({ k: 'c', x: s.x + (i - (nx - 1) / 2) * pitch, y: s.y + (j - (ny - 1) / 2) * pitch, d: s.d });
+      return out;
+    }
+    case 'hex': {
+      const out = [], cell = Math.max(3, s.cell), R = cell / Math.sqrt(3), p = cell + Math.max(1, s.web), dy = p * Math.sqrt(3) / 2;
+      const nj = Math.ceil(s.h / dy) + 1, ni = Math.ceil(s.w / p) + 1;
+      for (let j = -nj; j <= nj; j++) {
+        const y = s.y + j * dy, off = (Math.abs(j) % 2) ? p / 2 : 0;
+        if (Math.abs(y - s.y) + R > s.h / 2) continue;
+        for (let i = -ni; i <= ni; i++) {
+          const x = s.x + i * p + off;
+          if (Math.abs(x - s.x) + cell / 2 > s.w / 2) continue;
+          const pts = []; for (let k = 0; k < 6; k++) { const a = Math.PI / 2 + k * Math.PI / 3; pts.push([x + R * Math.cos(a), y + R * Math.sin(a)]); }
+          out.push({ k: 'p', pts });
+        }
+      }
+      return out;
+    }
+    case 'fan': return [{ k: 'f', x: s.x, y: s.y, s: s.s }];
+    case 'keystone': {
+      const out = []; for (let i = 0; i < s.n; i++) out.push({ k: 'r', x: s.x + (i - (s.n - 1) / 2) * 25, y: s.y, w: 14.9, h: 16.5, r: 0 });
+      return out;
+    }
+  }
+  return [];
+}
+function shapeSize(s) {
+  if (s.t === 'fan') return [s.s, s.s];
+  if (s.t === 'circle') return [s.d, s.d];
+  if (s.t === 'keystone') return [(s.n - 1) * 25 + 14.9, 16.5];
+  return [s.w, s.h];
+}
+function defaultShape(t, p, g) {
+  const sa = safeArea(p, g), cx = r05((sa.a0 + sa.a1) / 2), cy = r05((sa.b0 + sa.b1) / 2);
+  const w = sa.a1 - sa.a0, h = sa.b1 - sa.b0, mw = Math.min(w, 120), mh = Math.min(h, 80);
+  switch (t) {
+    case 'fan': { const s = [120, 92, 80, 60, 40].find(z => z + 2 <= Math.min(w, h)) || 40; return { t, x: cx, y: cy, s }; }
+    case 'circle': return { t, x: cx, y: cy, d: Math.min(20, h - 2) };
+    case 'rect': return { t, x: cx, y: cy, w: r05(mw * 0.6), h: r05(mh * 0.6), r: 3 };
+    case 'slot': return { t, x: cx, y: cy, w: r05(mw * 0.6), h: 8 };
+    case 'slots': return { t, x: cx, y: cy, w: r05(mw), h: r05(mh), sw: 6, pitch: 13, dir: 'h' };
+    case 'hex': return { t, x: cx, y: cy, w: r05(mw), h: r05(mh), cell: 10, web: 2.4 };
+    case 'holes': return { t, x: cx, y: cy, w: r05(mw), h: r05(mh), d: 5, pitch: 8 };
+    case 'keystone': return { t, x: cx, y: cy, n: Math.max(1, Math.min(4, Math.floor((w - 10) / 25))) };
+  }
+}
+
+// Ajusta el centro de un ventilador a la zona útil; null si no cabe
+function fitFan(p, g, S, a, b) {
+  const sa = safeArea(p, g), m = S / 2 + 1;
+  if (sa.a1 - sa.a0 < 2 * m || sa.b1 - sa.b0 < 2 * m) return null;
+  return { t: 'fan', s: S, x: r05(Math.min(sa.a1 - m, Math.max(sa.a0 + m, a))), y: r05(Math.min(sa.b1 - m, Math.max(sa.b0 + m, b))) };
+}
+
+// Paso entre coordenadas de tapa (a,b) y de montaje. o = distancia hacia dentro.
+function panelToWorld(p, a, b, g, o = 0) {
+  const zb = g.uz(p.u0);
+  switch (p.side) {
+    case 'front': return { c: [a, -g.FT + o, zb + b], n: 'y' };
+    case 'rear': return { c: [g.W - a, g.D + g.FT - o, zb + b], n: 'y' };
+    case 'left': return { c: [g.RT + o, g.D - a, zb + b], n: 'x' };
+    case 'right': return { c: [g.W - g.RT - o, a, zb + b], n: 'x' };
+    case 'top': return { c: [a, b, g.TOPZ + g.PLATE_T - o], n: 'z' };
+  }
+}
+function worldToPanel(p, pt, g) {
+  const zb = g.uz(p.u0);
+  switch (p.side) {
+    case 'front': return [pt.x, pt.z - zb];
+    case 'rear': return [g.W - pt.x, pt.z - zb];
+    case 'left': return [g.D - pt.y, pt.z - zb];
+    case 'right': return [pt.y, pt.z - zb];
+    case 'top': return [pt.x, pt.y];
+  }
+}
+function fanPoses(cfg, g) {
+  const out = [];
+  for (const p of cfg.panels || []) for (const s of p.shapes) if (s.t === 'fan') out.push({ ...panelToWorld(p, s.x, s.y, g, 12.5 + (p.side === 'top' ? g.PLATE_T : p.side === 'left' || p.side === 'right' ? g.WALL : g.FT)), s: s.s });
+  return out;
+}
+
+// Ajusta tapas y baldas tras cambiar medidas (recorta rangos, regenera plantillas no editadas)
+function syncConfig(cfg) {
+  const g = derive(cfg);
+  cfg.panels = (cfg.panels || []).filter(p => SIDES[p.side] && (p.side === 'top' || p.u0 <= g.NU));
+  for (const p of cfg.panels) {
+    if (p.side === 'top') { p.u0 = 1; p.nu = 1; }
+    else { p.u0 = Math.max(1, Math.min(g.NU, Math.round(p.u0))); p.nu = Math.max(1, Math.min(g.NU - p.u0 + 1, Math.round(p.nu))); }
+    if (p.auto) p.shapes = templateShapes(p.tpl, p, g);
+  }
+  cfg.shelves = (cfg.shelves || []).filter(s => SHELF_TYPES[s.type]);
+  for (const s of cfg.shelves) s.u = Math.max(1, Math.min(g.NU, Math.round(s.u)));
+  return cfg;
+}
+// Tapas que se pisan en el mismo lado
+function panelClashes(cfg) {
+  const bad = new Set();
+  const ps = cfg.panels || [];
+  for (let i = 0; i < ps.length; i++) for (let j = i + 1; j < ps.length; j++) {
+    const a = ps[i], b = ps[j];
+    if (a.side !== b.side) continue;
+    if (a.side === 'top' || (a.u0 < b.u0 + b.nu && b.u0 < a.u0 + a.nu)) { bad.add(a.id); bad.add(b.id); }
+  }
+  return bad;
+}
+function firstFree(cfg, side) {
+  const g = derive(cfg);
+  if (side === 'top') return (cfg.panels || []).some(p => p.side === 'top') ? null : { u0: 1, nu: 1 };
+  const used = new Array(g.NU + 2).fill(false);
+  for (const p of cfg.panels || []) if (p.side === side) for (let u = p.u0; u < p.u0 + p.nu; u++) used[u] = true;
+  for (let u = 1; u <= g.NU; u++) if (!used[u]) { let n = 0; while (u + n <= g.NU && !used[u + n] && n < 3) n++; return { u0: u, nu: n }; }
+  return null;
+}
+function shelfSpan(s, g) {
+  if (s.type === 'placa') return 6;
+  if (s.type === 'discos') return Math.max(1, Math.ceil(((s.hdd || 0) * HDD_MOD[2] + 14) / U));
+  return Math.max(1, Math.ceil(((s.dev ? s.dev[2] : 30) + g.TRAY_Z + 9) / U));
+}
 
 // ------------------------------------------------------------------
 //  Ayudas sobre el kernel K
@@ -316,34 +634,73 @@ function H(K) {
   return { box, cylZ, cylX, cylY, U: U_, diff, atCorners };
 }
 
+// Sólido de recorte de un diseño en coordenadas de tapa (a→X, b→Y, grosor Z de -30 a 30)
+function designSolid(K, shapes, sa, flipW) {
+  const { cylZ, box } = H(K);
+  const fx = (x) => flipW ? flipW - x : x;
+  const parts = [], fans = [], keep = [];
+  for (const s of shapes || []) for (const q of prims(s)) {
+    if (q.k === 'c') parts.push(cylZ(fx(q.x), q.y, -30, q.d, 60));
+    else if (q.k === 'r') {
+      if (q.r < 0.3) parts.push(box(fx(q.x) - q.w / 2, q.y - q.h / 2, -30, q.w, q.h, 60));
+      else {
+        const dx = Math.max(0, q.w / 2 - q.r), dy = Math.max(0, q.h / 2 - q.r);
+        const pts = dx < 0.01 && dy < 0.01 ? [[0, 0]] : dx < 0.01 ? [[0, -dy], [0, dy]] : dy < 0.01 ? [[-dx, 0], [dx, 0]] : [[-dx, -dy], [dx, -dy], [-dx, dy], [dx, dy]];
+        const cs = pts.map(([ox, oy]) => cylZ(fx(q.x) + ox, q.y + oy, -30, 2 * q.r, 60));
+        parts.push(cs.length === 1 ? cs[0] : K.hull(cs));
+      }
+    } else if (q.k === 'p') parts.push(K.tr(K.prism(q.pts.map(([x, y]) => [fx(x), y]), 60), [0, 0, -30]));
+    else if (q.k === 'f') { fans.push(K.tr(fanCut(K, q.s, 60), [fx(q.x), q.y, -31])); keep.push(box(fx(q.x) - q.s / 2 - 2, q.y - q.s / 2 - 2, -35, q.s + 4, q.s + 4, 70)); }
+  }
+  if (!parts.length && !fans.length) return null;
+  // bajo un ventilador no se recorta nada más: queda su marco macizo para los tornillos
+  let all = parts.length ? K.union(parts) : null;
+  if (all && keep.length) all = K.diff(all, keep);
+  if (fans.length) all = all ? K.union([all, ...fans]) : K.union(fans);
+  return K.inter(all, box(sa.a0, sa.b0, -40, sa.a1 - sa.a0, sa.b1 - sa.b0, 80));
+}
+
+// Rejilla de ventilador en el plano XY, centrada en el origen, z de -1 a th+1
+function fanCut(K, S, th) {
+  const { cylZ, box } = H(K);
+  const hs = FAN_SIZES[S] || S * 0.85;
+  const rings = [];
+  const rMax = S / 2 - 2.5;
+  rings.push(cylZ(0, 0, -1, Math.min(14, S * 0.22), th + 2));
+  for (let r = Math.min(7, S * 0.11) + 3; r + 3 <= rMax; r += 7) rings.push(K.diff(cylZ(0, 0, -1, 2 * (r + 4), th + 2), [cylZ(0, 0, -2, 2 * r, th + 4)]));
+  const spokes = [box(-1.6, -S, -3, 3.2, 2 * S, th + 6), box(-S, -1.6, -3, 2 * S, 3.2, th + 6)];
+  const grill = K.diff(K.union(rings), spokes);
+  const holes = [];
+  for (const sx of [-1, 1]) for (const sy of [-1, 1]) holes.push(cylZ(sx * hs / 2, sy * hs / 2, -1, S <= 40 ? 3.4 : 4.4, th + 2));
+  return K.union([grill, ...holes]);
+}
+
 // ------------------------------------------------------------------
 //  Piezas (en coordenadas de montaje)
 // ------------------------------------------------------------------
-function sideWall(K, g, nu) {
-  const { box, cylX, cylZ, U: un, diff, } = H(K);
+function sideBoltZ(nu) { const z = []; for (let k = 0; k < nu; k++) if (k % 2 === 0 || k === nu - 1) z.push((k + 0.5) * U); return z; }
+
+function sidePanel(K, g, p, flip) {
+  const { box, cylX, cylZ, U: un, diff } = H(K);
   const { RT, WALL, D, BOLT_Y } = g;
-  const h = nu * U;
+  const h = p.nu * U;
   const base = un([box(RT, 4, 0, WALL, D - 8, h), box(RT, 38, 0, 8, D - 76, 6), box(RT, 38, h - 6, 8, D - 76, 6)]);
   const cuts = [];
-  const n = Math.floor((h - 36) / 12);
-  for (let i = 0; i < n; i++) {
-    const z = 18 + i * 12 + 2.5;
-    cuts.push(K.hull([cylX(RT - 2, 63, z, 5, WALL + 4), cylX(RT - 2, D - 63, z, 5, WALL + 4)]));
-  }
-  const zs = [15, h - 15];
-  for (let k = 1; k <= nu - 1; k += 2) zs.push(k * U);
-  for (const y of [BOLT_Y, D - BOLT_Y]) for (const z of zs) cuts.push(cylX(RT - 1, y, z, 4.4, WALL + 2));
+  for (const y of [BOLT_Y, D - BOLT_Y]) for (const z of sideBoltZ(p.nu)) cuts.push(cylX(RT - 1, y, z, 4.4, WALL + 2));
   for (const y of [D / 3, 2 * D / 3]) for (const z of [-1, h - 10]) cuts.push(cylZ(RT + 4, y, z, 6.3, 11));
-  return { solid: diff(base, cuts), m4: 2 * zs.length };
+  const d = designSolid(K, p.shapes, safeArea(p, g), flip ? D : 0);
+  if (d) cuts.push(K.tr(K.rot(d, [90, 0, 90]), [RT + WALL / 2, 0, 0]));
+  return diff(base, cuts);
 }
 
 function cornerBlock(K, g) {
   const { box, cylX, cylZ, diff } = H(K);
   const { CB_X0, CB_Y0, CB, BOLT_Y } = g;
-  return diff(box(CB_X0, CB_Y0, 0, ...CB), [cylX(CB_X0 - 1, BOLT_Y, 15, 5.6, 9), cylZ(CB_X0 + CB[0] / 2, CB_Y0 + 19, -1, 5.6, 9)]);
+  const hz = g.Z0 + U / 2 - g.PLATE_T;   // coincide con el agujero de la primera U de la pared
+  return diff(box(CB_X0, CB_Y0, 0, ...CB), [cylX(CB_X0 - 1, BOLT_Y, hz, 5.6, 9), cylZ(CB_X0 + CB[0] / 2, CB_Y0 + 19, -1, 5.6, 9)]);
 }
 
-function plateFull(K, g, top) {
+function plateFull(K, g, top, design) {
   const { box, cylZ, U: un, diff, atCorners } = H(K);
   const { W, D, RF, RT, RS, WALL, TOL, POCKET, PLATE_T, CB_X0, CB_Y0, CB } = g;
   const zc = top ? -1 : PLATE_T - POCKET;
@@ -353,12 +710,15 @@ function plateFull(K, g, top) {
   const cx = CB_X0 + CB[0] / 2, cy = CB_Y0 + 19;
   cuts.push(atCorners(un([cylZ(cx, cy, -1, 4.5, PLATE_T + 2),
     top ? cylZ(cx, cy, PLATE_T - 1.4, 4.5, 2.5, 9) : cylZ(cx, cy, -0.01, 9, 2.5, 4.5)]), W, D));
-  if (!top) for (const x of [28, W - 28]) for (const y of [40, D - 40]) cuts.push(cylZ(x, y, -1, 5.6, 7));
-  const rows = Math.max(0, Math.floor((D - 85) / 20) + 1);
-  const len = W / 2 - 60;
-  for (const x0 of [35, W / 2 + 25]) for (let i = 0; i < rows; i++)
-    cuts.push(K.hull([cylZ(x0, 35 + i * 20, -1, 8, PLATE_T + 2), cylZ(x0 + len, 35 + i * 20, -1, 8, PLATE_T + 2)]));
-  cuts.push(box(W / 2 - 40, D - 40, -1, 80, 25, PLATE_T + 2));
+  if (!top) {
+    for (const x of [28, W - 28]) for (const y of [40, D - 40]) cuts.push(cylZ(x, y, -1, 5.6, 7));
+    const rows = Math.max(0, Math.floor((D - 85) / 20) + 1);
+    const len = W / 2 - 60;
+    for (const x0 of [35, W / 2 + 25]) for (let i = 0; i < rows; i++)
+      cuts.push(K.hull([cylZ(x0, 35 + i * 20, -1, 8, PLATE_T + 2), cylZ(x0 + len, 35 + i * 20, -1, 8, PLATE_T + 2)]));
+    cuts.push(box(W / 2 - 40, D - 40, -1, 80, 25, PLATE_T + 2));
+  }
+  if (design) cuts.push(K.tr(design, [0, 0, PLATE_T / 2]));
   return diff(box(0, 0, 0, W, D, PLATE_T), cuts);
 }
 
@@ -367,38 +727,22 @@ function foot(K) {
   return diff(cylZ(0, 0, 0, 30, 12, 24), [cylZ(0, 0, -1, 4.5, 20), cylZ(0, 0, -1, 9, 8)]);
 }
 
-// Frontal genérico con orejas (cara delantera en y = -t)
+// Tapa frontal/trasera con orejas (cara exterior en y = -t)
 function facePlate(K, g, nu, opts = {}) {
   const { box, cylY, U: un, diff } = H(K);
-  const { W, OPEN, FL_W, TOL, HOLE_X, HOLE_Z, M6_D, TRAY_Z } = g;
+  const { W, OPEN, FL_W, TOL, HOLE_X, HOLE_Z, M6_D } = g;
   const t = g.FT;
   const h = nu * U - 0.8;
   const body = un([box(0, -t, 0, W, t, h), box(FL_W + TOL, 0, 0, OPEN - 2 * TOL, 6, 4), box(FL_W + TOL, 0, h - 4, OPEN - 2 * TOL, 6, 4)]);
   const cuts = [];
   for (let u = 0; u < nu; u++) for (const hz of HOLE_Z) for (const x of [HOLE_X, W - HOLE_X])
     cuts.push(K.hull([cylY(x - 1.5, -t - 1, u * U + hz, M6_D, t + 2), cylY(x + 1.5, -t - 1, u * U + hz, M6_D, t + 2)]));
-  if (opts.trayHoles) for (const x of trayTabX(g)) cuts.push(cylY(x, -t - 1, TRAY_Z + 8, 3.4, t + 8));
-  if (opts.window) {
-    const [ww, wh] = opts.window;
-    cuts.push(box((W - ww) / 2, -t - 1, (h - wh) / 2, ww, t + 2, wh));
-  }
-  if (opts.extra) cuts.push(...opts.extra(h, t));
-  return { solid: diff(body, cuts), h };
+  for (const z of opts.trayZ || []) for (const x of trayTabX(g)) cuts.push(cylY(x, -t - 1, z, 3.4, t + 8));
+  if (opts.extra) cuts.push(...opts.extra);
+  return diff(body, cuts);
 }
 
-function ventRows(K, g, h, t, x0, len, opts = {}) {
-  const { cylY } = H(K);
-  const pitch = opts.pitch || 14, m = opts.margin || 16, d = opts.d || 6;
-  const out = [];
-  const n = Math.max(0, Math.floor((h - 2 * m) / pitch) + 1);
-  const z0 = (h - (n - 1) * pitch) / 2;
-  for (let i = 0; i < n; i++) out.push(K.hull([cylY(x0, -t - 1, z0 + i * pitch, d, t + 2), cylY(x0 + len, -t - 1, z0 + i * pitch, d, t + 2)]));
-  return out;
-}
-
-function trayTabX(g) {
-  return g.is19 ? [60, g.W / 2, g.W - 60] : [60, g.W - 60];
-}
+function trayTabX(g) { return g.is19 ? [60, g.W / 2, g.W - 60] : [60, g.W - 60]; }
 
 function tray(K, g, lip = 15) {
   const { box, cylY, U: un, diff } = H(K);
@@ -447,6 +791,27 @@ function sfxCradle(K, g) {
   return diff(body, cuts);
 }
 
+// Raíl impreso en L (tramo de nu U). Ala frontal (x) con insertos M5, ala lateral (y) con insertos M4, espigas de 3 mm en los extremos.
+function railSeg(K, g, nu) {
+  const { box, cylX, cylY, cylZ, U: un, diff } = H(K);
+  const { RF, RT, RS, HOLE_X, HOLE_Z, BOLT_Y } = g;
+  const L = nu * U;
+  const cuts = [];
+  for (let u = 0; u < nu; u++) {
+    for (const hz of HOLE_Z) cuts.push(cylY(HOLE_X, -1, u * U + hz, 6.4, RT + 2));
+    cuts.push(cylX(-1, BOLT_Y, (u + 0.5) * U, 5.6, RT + 2));
+  }
+  for (const z of [-1, L - 7]) { cuts.push(cylZ(RF - 2.3, RT / 2, z, 3.2, 8)); cuts.push(cylZ(RT / 2, RS - 4, z, 3.2, 8)); }
+  return diff(un([box(0, 0, 0, RF, RT, L), box(0, 0, 0, RT, RS, L)]), cuts);
+}
+function railSegments(cfg, g) {
+  const maxU = Math.max(1, Math.floor((Math.max(cfg.bed[0], cfg.bed[1]) - 2) / U));
+  const k = Math.ceil(g.NU / maxU);
+  const base = Math.floor(g.NU / k), rem = g.NU % k;
+  const segs = []; for (let i = 0; i < k; i++) segs.push(base + (i < rem ? 1 : 0));
+  return segs;
+}
+
 // ------------------------------------------------------------------
 //  Corte con colas de milano (puzzle) para piezas que no caben en la cama
 // ------------------------------------------------------------------
@@ -480,7 +845,6 @@ function puzzleSplit(K, solid, cut, cuts, inn, tabPos, tab = { neck: 9, head: 15
 
 function fitsRect(a, b, bed) { return (a <= bed[0] && b <= bed[1]) || (a <= bed[1] && b <= bed[0]); }
 
-// Elige nº de trozos (na x nb) mínimo para que quepa en la cama
 function planSplit(eA, eB, bed, tabDepth = 9) {
   let best = null;
   for (let na = 1; na <= 6; na++) for (let nb = 1; nb <= 6; nb++) {
@@ -490,13 +854,7 @@ function planSplit(eA, eB, bed, tabDepth = 9) {
   return best || { na: 6, nb: 6, fail: true };
 }
 
-// ------------------------------------------------------------------
-//  Lista de piezas para una configuración
-// ------------------------------------------------------------------
-//  Cada pieza: { id, name, group, color, sig, qty, build(K) -> solid,
-//    print: { rot:[..] }, plane: [a,b] | null, inst: [{t:[..], s:[..]}] }
-const COLORS = { frame: '#e0782c', frame2: '#f0a868', face: '#f3b27a', tray: '#e9893c', acc: '#c65f1a', metal: '#9aa1a8' };
-
+// Tramos de pared lateral que caben en la cama (para las tapas laterales por defecto)
 function wallSegments(cfg, g) {
   const bed = cfg.bed;
   let maxU = 1;
@@ -511,301 +869,174 @@ function wallSegments(cfg, g) {
   return segs;
 }
 
-function moduleLayout(cfg) {
-  let u = 1;
-  return cfg.modules.map((m, i) => { const r = { m, i, u0: u }; u += m.u; return r; });
-}
+// ------------------------------------------------------------------
+//  Lista de piezas
+// ------------------------------------------------------------------
+//  Cada pieza: { id, name, group, color, sig, build(K) -> solid, print, plane, inst: [{t, s}], panelId?, explode }
+const COLORS = { frame: '#e0782c', panel: '#f3b27a', side: '#e9893c', tray: '#e9893c', acc: '#c65f1a', rail: '#d06a24' };
 
-function deviceWarnings(cfg, g) {
-  const w = [];
-  for (const { m, u0 } of moduleLayout(cfg)) {
-    const tag = `U${u0}${m.u > 1 ? '–' + (u0 + m.u - 1) : ''} ${MODULE_TYPES[m.type].short}`;
-    if (m.dev) {
-      const [dw, dd, dh] = m.dev;
-      if (dw > g.OPEN - 2 * g.TOL - 6) w.push(`${tag}: ${dw} mm de ancho no cabe entre los laterales de la bandeja (máx. ${Math.floor(g.OPEN - 2 * g.TOL - 6)} mm). Mide el equipo o usa el estándar de 19".`);
-      if (dd > g.D - 20) w.push(`${tag}: ${dd} mm de fondo supera el fondo útil (${g.D - 20} mm). Aumenta el fondo del rack.`);
-      if (dh > m.u * U - g.TRAY_Z - 3 - 5) w.push(`${tag}: ${dh} mm de alto necesita al menos ${Math.ceil((dh + g.TRAY_Z + 8) / U)}U.`);
-    }
-    if (m.type === 'compute') {
-      if (m.u * U < MB[0] + 8 + g.TRAY_Z + 3 + 2) w.push(`${tag}: la placa micro-ATX vertical necesita 6U.`);
-      if (g.D < 250) w.push(`${tag}: la placa de 244 mm necesita un fondo de al menos 250 mm.`);
-    }
-    if (m.type === 'storage' && g.D < HDD_MOD[1] + 50) w.push(`${tag}: los módulos de disco de 3,5" necesitan ~${HDD_MOD[1] + 50} mm de fondo.`);
-  }
-  return w;
+function panelLabel(p) {
+  if (p.side === 'top') return SIDES.top;
+  return `${SIDE_SHORT[p.side]} U${p.u0}${p.nu > 1 ? '–' + (p.u0 + p.nu - 1) : ''}`;
+}
+function designName(p) {
+  if (!p.shapes.length) return 'lisa';
+  if (p.auto) return TEMPLATES[p.tpl].toLowerCase();
+  const fans = p.shapes.filter(s => s.t === 'fan').map(s => s.s);
+  return 'diseño propio' + (fans.length ? ` · vent. ${fans.join('+')} mm` : '');
 }
 
 function buildPartList(cfg) {
   const g = derive(cfg);
   const P = [];
-  const gsig = [cfg.std, g.D, g.WALL, g.FT].join('|');
-  const { W, D, Z0, NU, POCKET, PLATE_T } = g;
+  const gsig = [cfg.std, g.D, g.WALL, g.FT, g.RT].join('|');
+  const { W, D, Z0, NU, PLATE_T } = g;
+  const shelves = (cfg.shelves || []).filter(s => s.u <= NU);
 
   // --- Estructura -------------------------------------------------
-  const segs = wallSegments(cfg, g);
-  const segZ = []; { let z = Z0; for (const s of segs) { segZ.push(z); z += s * U; } }
-  const uniq = [...new Set(segs)];
-  for (const nu of uniq) {
-    const zs = segs.map((s, i) => s === nu ? segZ[i] : null).filter(z => z !== null);
-    P.push({ id: `pared_${nu}u_izq`, name: `Pared lateral ${nu}U izquierda`, group: 'Estructura', color: COLORS.frame,
-      sig: `wall|${gsig}|${nu}|L`, build: K => sideWall(K, g, nu).solid, print: [0, -90, 0], plane: ['y', 'z'],
-      inst: zs.map(z => ({ t: [0, 0, z] })), fan: { surf: 'left', n: 'x', n0: g.RT, th: g.WALL, hb: nu * U } });
-    P.push({ id: `pared_${nu}u_der`, name: `Pared lateral ${nu}U derecha`, group: 'Estructura', color: COLORS.frame,
-      sig: `wall|${gsig}|${nu}|R`, build: K => K.mir(sideWall(K, g, nu).solid, [1, 0, 0]), print: [0, 90, 0], plane: ['y', 'z'],
-      inst: zs.map(z => ({ t: [W, 0, z] })), fan: { surf: 'right', n: 'x', n0: -g.RT - g.WALL, th: g.WALL, hb: nu * U } });
-  }
   const cornerInst = [];
   for (const [mx, my] of [[1, 1], [-1, 1], [1, -1], [-1, -1]]) {
     const tx = mx < 0 ? W : 0, ty = my < 0 ? D : 0;
     cornerInst.push({ t: [tx, ty, PLATE_T], s: [mx, my, 1] });
-    cornerInst.push({ t: [tx, ty, Z0 + NU * U - POCKET], s: [mx, my, -1] });
+    cornerInst.push({ t: [tx, ty, g.TOPZ], s: [mx, my, -1] });
   }
   P.push({ id: 'bloque_esquina', name: 'Bloque de esquina', group: 'Estructura', color: COLORS.acc, sig: `cb|${gsig}`,
     build: K => cornerBlock(K, g), print: [0, 0, 0], plane: null, inst: cornerInst });
-  P.push({ id: 'tapa_inferior', name: 'Tapa inferior', group: 'Estructura', color: COLORS.acc, sig: `pb|${gsig}`,
-    build: K => plateFull(K, g, false), print: [0, 0, 0], plane: ['x', 'y'], inst: [{ t: [0, 0, 0] }], explode: [0, 0, -1], fan: { surf: 'bottom', n: 'z', n0: 0, th: PLATE_T } });
-  P.push({ id: 'tapa_superior', name: 'Tapa superior', group: 'Estructura', color: COLORS.acc, sig: `pt|${gsig}`,
-    build: K => plateFull(K, g, true), print: [0, 0, 0], plane: ['x', 'y'], inst: [{ t: [0, 0, Z0 + NU * U - POCKET] }], explode: [0, 0, 1], fan: { surf: 'top', n: 'z', n0: 0, th: PLATE_T } });
+  P.push({ id: 'base', name: 'Base', group: 'Estructura', color: COLORS.acc, sig: `pb|${gsig}`,
+    build: K => plateFull(K, g, false), print: [0, 0, 0], plane: ['x', 'y'], inst: [{ t: [0, 0, 0] }], explode: [0, 0, -1] });
   P.push({ id: 'pata', name: 'Pata', group: 'Estructura', color: '#3a3a3a', sig: 'foot', build: K => foot(K), print: [0, 0, 0], plane: null,
     inst: [[28, 40], [W - 28, 40], [28, D - 40], [W - 28, D - 40]].map(([x, y]) => ({ t: [x, y, -12] })), explode: [0, 0, -1.5] });
+  if (!cfg.panels.some(p => p.side === 'top'))
+    P.push({ id: 'tapa_superior_lisa', name: 'Tapa superior (estructura)', group: 'Estructura', color: COLORS.acc, sig: `pt|${gsig}`,
+      build: K => plateFull(K, g, true), print: [0, 0, 0], plane: ['x', 'y'], inst: [{ t: [0, 0, g.TOPZ] }], explode: [0, 0, 1] });
 
-  // --- Módulos ------------------------------------------------------
-  const maxFaceU = Math.max(1, Math.floor((Math.max(cfg.bed[0], cfg.bed[1]) + 0.8) / U));
-  const rearAgg = new Map();
-  for (const { m, i, u0 } of moduleLayout(cfg)) {
-    const z = g.uz(u0);
-    const T = MODULE_TYPES[m.type];
-    const grp = `U${u0}${m.u > 1 ? '–' + (u0 + m.u - 1) : ''} · ${T.short}`;
-    const key = `m${i}_${m.type}`;
-    const face = (optsFn, name, extraSig) => P.push({ id: `${key}_frontal`, name, group: grp, color: COLORS.face,
-      sig: `face|${gsig}|${m.u}|${extraSig}`, build: K => facePlate(K, g, m.u, optsFn(K)).solid, print: [90, 0, 0], plane: ['x', 'z'],
-      inst: [{ t: [0, 0, z] }], explode: [0, -1, 0], fan: { surf: 'front', n: 'y', n0: -g.FT, th: g.FT, hb: m.u * U - 0.8 } });
-    const trayPart = (lip = 15) => P.push({ id: `${key}_bandeja`, name: 'Bandeja', group: grp, color: COLORS.tray,
-      sig: `tray|${gsig}|${lip}`, build: K => tray(K, g, lip), print: [0, 0, 0], plane: ['x', 'y'], inst: [{ t: [0, 0, z + g.TRAY_Z] }] });
-    if (T.tray) {
-      // traseras en tramos imprimibles
-      let left = m.u, zz = z;
-      while (left > 0) {
-        const n = Math.min(left, maxFaceU, left > maxFaceU && left - maxFaceU < 2 ? Math.ceil(left / 2) : 99);
-        const k = `trasera_${n}u`;
-        if (!rearAgg.has(k)) rearAgg.set(k, { n, inst: [] });
-        rearAgg.get(k).inst.push({ t: [0, D, zz], s: [1, -1, 1] });
-        left -= n; zz += n * U;
-      }
+  if (g.printed) {
+    const segs = railSegments(cfg, g);
+    let z = Z0; const at = new Map();
+    for (const n of segs) { if (!at.has(n)) at.set(n, []); at.get(n).push(z); z += n * U; }
+    for (const [n, zs] of at) {
+      const inst = [];
+      for (const z0 of zs) for (const [mx, my] of [[1, 1], [-1, 1], [1, -1], [-1, -1]]) inst.push({ t: [mx < 0 ? W : 0, my < 0 ? D : 0, z0], s: [mx, my, 1] });
+      P.push({ id: `rail_${n}u`, name: `Raíl en L impreso, tramo ${n}U`, group: 'Raíles impresos', color: COLORS.rail, sig: `rail|${gsig}|${n}`,
+        build: K => railSeg(K, g, n), print: [0, 90, 0], plane: null, inst, explode: [0, 0, 0], rail: true });
     }
-    if (m.type === 'storage') {
-      face(K => ({ trayHoles: true, extra: (h, t) => storageCuts(g, h, t, K) }), 'Frontal almacenamiento (ventilador 80 mm)', 'st');
-      trayPart();
-    } else if (m.type === 'compute') {
-      face(K => ({ trayHoles: true, extra: (h, t) => computeCuts(g, h, t, m.button, K) }), 'Frontal cómputo (rejilla + pulsador)', 'cp' + (m.button ? 'b' : ''));
-      trayPart(10);
+  }
+
+  // --- Tapas -------------------------------------------------------
+  const GROUP = { front: 'Tapas frontales', rear: 'Tapas traseras', left: 'Laterales', right: 'Laterales', top: 'Tapa superior' };
+  for (const p of cfg.panels) {
+    const sa = safeArea(p, g), dsig = JSON.stringify(p.shapes);
+    const base = { group: GROUP[p.side], panelId: p.id, side: p.side, name: `${panelLabel(p)} · ${designName(p)}` };
+    if (p.side === 'front' || p.side === 'rear') {
+      const trayZ = shelves.filter(s => s.u >= p.u0 && s.u < p.u0 + p.nu).map(s => (s.u - p.u0) * U + g.TRAY_Z + 8);
+      const flip = p.side === 'rear' ? W : 0;
+      P.push({ ...base, id: `${p.side === 'front' ? 'frontal' : 'trasera'}_${p.id}`, color: COLORS.panel,
+        sig: `face|${gsig}|${p.nu}|${trayZ.join(',')}|${flip}|${dsig}`,
+        build: K => { const d = designSolid(K, p.shapes, sa, flip); return facePlate(K, g, p.nu, { trayZ, extra: d ? [K.tr(K.rot(d, [90, 0, 0]), [0, -g.FT / 2, 0])] : [] }); },
+        print: [90, 0, 0], plane: ['x', 'z'],
+        inst: [p.side === 'front' ? { t: [0, 0, g.uz(p.u0)] } : { t: [0, D, g.uz(p.u0)], s: [1, -1, 1] }],
+        explode: [0, p.side === 'front' ? -1 : 1, 0] });
+    } else if (p.side === 'left' || p.side === 'right') {
+      const L = p.side === 'left';
+      P.push({ ...base, id: `lateral_${L ? 'izq' : 'der'}_${p.id}`, color: COLORS.side,
+        sig: `side|${gsig}|${p.nu}|${L}|${dsig}`,
+        build: K => L ? sidePanel(K, g, p, true) : K.mir(sidePanel(K, g, p, false), [1, 0, 0]),
+        print: L ? [0, -90, 0] : [0, 90, 0], plane: ['y', 'z'],
+        inst: [{ t: [L ? 0 : W, 0, g.uz(p.u0)] }], explode: [L ? -1 : 1, 0, 0] });
+    } else {
+      P.push({ ...base, id: `superior_${p.id}`, color: COLORS.acc, sig: `top|${gsig}|${dsig}`,
+        build: K => plateFull(K, g, true, designSolid(K, p.shapes, sa, 0)),
+        print: [0, 0, 0], plane: ['x', 'y'], inst: [{ t: [0, 0, g.TOPZ] }], explode: [0, 0, 1] });
+    }
+  }
+
+  // --- Baldas ------------------------------------------------------
+  for (const s of shelves) {
+    const z = g.uz(s.u) + g.TRAY_Z;
+    const grp = `Balda U${s.u} · ${s.label && s.dev ? s.label : SHELF_TYPES[s.type].short}`;
+    const key = `balda_${s.id}`;
+    const lip = s.type === 'placa' ? 10 : 15;
+    P.push({ id: `${key}_bandeja`, name: 'Bandeja', group: grp, color: COLORS.tray, sig: `tray|${gsig}|${lip}`,
+      build: K => tray(K, g, lip), print: [0, 0, 0], plane: ['x', 'y'], inst: [{ t: [0, 0, z] }], shelfId: s.id });
+    if ((s.type === 'mini' || s.type === 'bandeja') && s.dev) {
+      const y0 = Math.max(10, Math.min(30, D - s.dev[1] - 12));
+      P.push({ id: `${key}_topes`, name: `Topes para ${s.label || 'equipo'}`, group: grp, color: COLORS.acc,
+        sig: `stops|${gsig}|${s.dev.join('x')}|${y0}`, build: K => stops(K, g, s.dev, y0), print: [0, 0, 0], plane: null,
+        inst: [{ t: [0, 0, z + 3] }], shelfId: s.id });
+    }
+    if (s.type === 'placa') {
       P.push({ id: `${key}_placa_montaje`, name: 'Placa de montaje de la placa base', group: grp, color: COLORS.acc,
         sig: `mb|${gsig}`, build: K => mbPlate(K, g), print: [0, -90, 0], plane: ['y', 'z'],
-        inst: [{ t: [g.FL_W + g.TOL + 3, 0, z + g.TRAY_Z + 3] }] });
+        inst: [{ t: [g.FL_W + g.TOL + 3, 0, z + 3] }], shelfId: s.id });
       P.push({ id: `${key}_cuna_sfx`, name: 'Cuna fuente SFX', group: grp, color: COLORS.acc, sig: `sfx|${gsig}`,
-        build: K => sfxCradle(K, g), print: [0, 0, 0], plane: null, inst: [{ t: [0, 0, z + g.TRAY_Z + 3] }] });
-    } else if (m.type === 'mini' || m.type === 'router' || m.type === 'shelf') {
-      const faceH = m.u * U - 0.8;
-      const win = [Math.min(m.dev[0] + 13, g.OPEN - 12), Math.max(10, Math.min(m.dev[2] + 26, faceH - 22))];
-      face(() => ({ trayHoles: true, window: win }), `Frontal con ventana ${Math.round(win[0])}×${Math.round(win[1])}`, `w${win.join('x')}`);
-      trayPart();
-      if (m.type === 'mini' || m.type === 'shelf') {
-        const y0 = Math.max(10, Math.min(30, D - m.dev[1] - 12));
-        P.push({ id: `${key}_topes`, name: `Topes para ${m.label || 'equipo'}`, group: grp, color: COLORS.acc,
-          sig: `stops|${gsig}|${m.dev.join('x')}|${y0}`, build: K => stops(K, g, m.dev, y0), print: [0, 0, 0], plane: null,
-          inst: [{ t: [0, 0, z + g.TRAY_Z + 3] }] });
-      }
-    } else if (m.type === 'patch') {
-      const n = Math.max(1, Math.min(m.keystones || 8, Math.floor((g.OPEN - 10) / 25)));
-      face(K => ({ extra: (h, t) => keystoneCuts(K, g, h, t, n) }), `Patch panel ${n} keystones`, `ks${n}`);
-    } else if (m.type === 'blank') {
-      face(K => ({ extra: (h, t) => ventRows(K, g, h, t, 40, g.W - 80, { margin: 12 }) }), `Tapa ventilada ${m.u}U`, 'blank');
+        build: K => sfxCradle(K, g), print: [0, 0, 0], plane: null, inst: [{ t: [0, 0, z + 3] }], shelfId: s.id });
     }
   }
-  for (const [k, r] of rearAgg) {
-    P.push({ id: k, name: `Trasera ${r.n}U (paso de cables)`, group: 'Traseras', color: COLORS.face, sig: `rear|${gsig}|${r.n}`,
-      build: K => facePlate(K, g, r.n, { trayHoles: true, window: [g.OPEN - 30, r.n * U - 22] }).solid, print: [90, 0, 0], plane: ['x', 'z'],
-      inst: r.inst, explode: [0, 1, 0], fan: { surf: 'rear', n: 'y', n0: -g.FT, th: g.FT, hb: r.n * U - 0.8 } });
-  }
-  return { parts: applyFans(P, cfg, g), g, segs };
-}
-
-function storageCuts(g, h, t, K) {
-  if (!K) return [];
-  const { cylY, U: un } = H(K);
-  const cx = g.W - g.FL_W - 62, cz = h / 2;
-  const out = [];
-  const fc = fanCut(K, 80, t);
-  out.push(K.tr(K.rot(fc, [-90, 0, 0]), [cx, -t, cz]));
-  out.push(...ventRows(K, g, h, t, 34, Math.max(20, cx - 34 - 60), { pitch: 16, margin: 20 }));
-  return out;
-}
-
-function computeCuts(g, h, t, button, K) {
-  if (!K) return [];
-  const { cylY } = H(K);
-  const out = ventRows(K, g, h, t, 40, Math.min(150, g.W - 140), { pitch: 14, margin: 22 });
-  if (button) {
-    const bx = g.W - g.FL_W - 36;
-    out.push(cylY(bx, -t - 1, h - 40, 16.2, t + 2));
-    out.push(cylY(bx, -t - 1, h - 65, 5.2, t + 2));
-  }
-  return out;
-}
-
-function keystoneCuts(K, g, h, t, n) {
-  const { box } = H(K);
-  const out = [];
-  for (let i = 0; i < n; i++) out.push(box(g.W / 2 - (n - 1) / 2 * 25 + i * 25 - 7.45, -t - 1, (h - 16.5) / 2, 14.9, t + 2, 16.5));
-  return out;
+  return { parts: P, g };
 }
 
 // Maquetas para la vista (no se imprimen): cajas [x,y,z,sx,sy,sz,color,etiqueta]
 function mockups(cfg, g) {
   const out = [];
-  for (const { m, u0 } of moduleLayout(cfg)) {
-    const z = g.uz(u0) + g.TRAY_Z + 3;
-    if (m.dev) {
-      const y0 = m.type === 'router' ? Math.max(10, Math.min(50, g.D - m.dev[1] - 12)) : Math.max(10, Math.min(30, g.D - m.dev[1] - 12));
-      const col = m.type === 'router' ? '#eeeeec' : m.type === 'mini' ? '#3b3e44' : '#6c7a89';
-      out.push([(g.W - m.dev[0]) / 2, y0, z, ...m.dev, col, m.label]);
+  for (const s of cfg.shelves || []) {
+    if (s.u > g.NU) continue;
+    const z = g.uz(s.u) + g.TRAY_Z + 3;
+    if (s.dev) {
+      const y0 = s.type === 'router' ? Math.max(10, Math.min(50, g.D - s.dev[1] - 12)) : Math.max(10, Math.min(30, g.D - s.dev[1] - 12));
+      const col = s.type === 'router' ? '#eeeeec' : s.type === 'mini' ? '#3b3e44' : '#6c7a89';
+      out.push([(g.W - s.dev[0]) / 2, y0, z, ...s.dev, col, s.label]);
     }
-    if (m.type === 'storage') {
-      for (let i = 0; i < (m.hdd || 0); i++) out.push([30, 40, z + i * HDD_MOD[2], HDD_MOD[0], HDD_MOD[1], HDD_MOD[2] - 1, '#3a7fc4', 'HDD 3,5"']);
-      for (let i = 0; i < (m.ssd || 0); i++) out.push([g.W - g.FL_W - 95, 120, z + i * SSD_MOD[2], SSD_MOD[0], SSD_MOD[1], SSD_MOD[2] - 0.8, '#8a63c9', 'SSD 2,5"']);
-      out.push([g.W - g.FL_W - 102, 4, g.uz(u0) + (m.u * U - 80) / 2, 80, 25, 80, '#222222', 'Ventilador 80 mm']);
+    if (s.type === 'discos') {
+      for (let i = 0; i < (s.hdd || 0); i++) out.push([30, 40, z + i * HDD_MOD[2], HDD_MOD[0], HDD_MOD[1], HDD_MOD[2] - 1, '#3a7fc4', 'HDD 3,5"']);
+      for (let i = 0; i < (s.ssd || 0); i++) out.push([g.W - g.FL_W - 95, 120, z + i * SSD_MOD[2], SSD_MOD[0], SSD_MOD[1], SSD_MOD[2] - 0.8, '#8a63c9', 'SSD 2,5"']);
     }
-    if (m.type === 'compute') {
+    if (s.type === 'placa') {
       const bx = g.FL_W + g.TOL + 3 + 4 + STANDOFF;
-      out.push([bx, g.D - 3 - MB[1], z + MB_Z0, 1.6, MB[1], MB[0], '#2f6b3a', 'Placa HP IPM17-002']);
+      out.push([bx, g.D - 3 - MB[1], z + MB_Z0, 1.6, MB[1], MB[0], '#2f6b3a', 'Placa base']);
       out.push([bx + 1.6, g.D - 3 - 48 - 96, z + MB_Z0 + 132, 52, 96, 96, '#555555', 'Disipador']);
-      out.push([g.W - g.FL_W - 8 - SFX[2], 12, z + 3, SFX[2], SFX[1], SFX[0], '#5a5f66', 'Fuente SFX']);
-      for (let i = 0; i < (m.ssd || 0); i++) out.push([g.W - g.FL_W - 8 - SSD_MOD[0], 130, z + i * SSD_MOD[2], SSD_MOD[0], SSD_MOD[1], SSD_MOD[2] - 0.8, '#8a63c9', 'SSD 2,5"']);
+      out.push([g.W - g.FL_W - 8 - SFX[2], 12, z, SFX[2], SFX[1], SFX[0], '#5a5f66', 'Fuente SFX']);
+      for (let i = 0; i < (s.ssd || 0); i++) out.push([g.W - g.FL_W - 8 - SSD_MOD[0], 130, z + i * SSD_MOD[2], SSD_MOD[0], SSD_MOD[1], SSD_MOD[2] - 0.8, '#8a63c9', 'SSD 2,5"']);
     }
   }
   return out;
 }
 
+const RAIL_SHOPS = [
+  { name: 'Penn Elcom R0883-2mm (raíl doble 14U, agujero cuadrado, 2 mm)', url: 'https://penn-elcom.com/mx/14u-full-hole-double-rack-rail-with-square-holes-2mm-thick-r0883-2mm-14' },
+  { name: 'Hammond CLSR (raíl de montaje con agujero cuadrado, varias alturas)', url: 'https://www.hammfg.com/product/clsr' },
+  { name: 'DeskPi RackMate T1 / T2 (rack metálico de 10″ completo)', url: 'https://deskpi.com/products/deskpi-rackmate-t1-2' },
+];
+
 function hardware(cfg, g, parts) {
-  const faces = parts.filter(p => /_frontal$|^trasera_/.test(p.id)).reduce((s, p) => s + p.inst.length, 0);
-  const trays = parts.filter(p => /_bandeja$/.test(p.id)).length;
+  const fr = cfg.panels.filter(p => p.side === 'front' || p.side === 'rear');
+  const ears = fr.length * 4;
+  const sideBolts = cfg.panels.filter(p => p.side === 'left' || p.side === 'right').reduce((s, p) => s + 2 * sideBoltZ(p.nu).length, 0);
+  const shelves = (cfg.shelves || []).filter(s => s.u <= g.NU);
   const tabs = trayTabX(g).length;
-  const walls = wallSegments(cfg, g);
-  let wallBolts = 0;
-  for (const nu of walls) { let n = 2; for (let k = 1; k <= nu - 1; k += 2) n++; wallBolts += 2 * 2 * n; }
-  const compute = cfg.modules.filter(m => m.type === 'compute').length;
-  return [
-    [`Raíles de rack metálicos de ${g.NU}U (perfil en L, agujero cuadrado)`, 4],
-    ['Tuercas enjauladas M6 + tornillos M6×12 (4 por frontal/trasera)', faces * 4],
-    ['Tornillos M4×10 pared–raíl (taladrar ala del raíl a 4,5 mm)', wallBolts],
-    ['Insertos roscados M4 (bloques de esquina y patas)', 8 * 2 + 4],
-    ['Tornillos M4×16 avellanados tapa–bloque', 8],
-    ['Tornillos M4×20 para patas', 4],
-    ['Tornillos M3×10 + tuerca, bandeja–frontal/trasera', trays * tabs * 2],
-    ['Espigas de 6×20 mm entre tramos de pared', Math.max(0, walls.length - 1) * 2 * 2],
-    ...Object.entries((cfg.fans || []).reduce((o, f) => (o[f.s] = (o[f.s] || 0) + 1, o), {})).map(([sz, n]) => [`Ventilador de ${sz} mm (+4 tornillos de ventilador o M${sz <= 40 ? 3 : 4})`, n]),
-    ...(compute ? [['Insertos M3 + tornillos M3×8 para la placa base', 8 * compute], ['Tornillos M3×10 placa de montaje–bandeja', 3 * compute]] : []),
-  ];
-}
-
-
-// ------------------------------------------------------------------
-//  Ventiladores colocados por el usuario (cfg.fans)
-//  fan = { surf: front|rear|left|right|top|bottom, a, b, s }
-//  front/rear: a = x, b = z · left/right: a = y, b = z · top/bottom: a = x, b = y   (coords de montaje)
-// ------------------------------------------------------------------
-const FAN_SIZES = { 40: 32, 60: 50, 80: 71.5, 92: 82.5, 120: 105, 140: 124.5 };
-const SURF_NAMES = { front: 'frontal', rear: 'trasera', left: 'lateral izq.', right: 'lateral der.', top: 'tapa superior', bottom: 'tapa inferior' };
-
-// Rejilla en el plano XY (normal +Z), centrada en el origen, z de -1 a th+1
-function fanCut(K, S, th) {
-  const { cylZ, box } = H(K);
-  const hs = FAN_SIZES[S] || S * 0.85;
-  const rings = [];
-  const rMax = S / 2 - 2.5;
-  rings.push(cylZ(0, 0, -1, Math.min(14, S * 0.22), th + 2));
-  for (let r = Math.min(7, S * 0.11) + 3; r + 3 <= rMax; r += 7) rings.push(K.diff(cylZ(0, 0, -1, 2 * (r + 4), th + 2), [cylZ(0, 0, -2, 2 * r, th + 4)]));
-  const spokes = [box(-1.6, -S, -3, 3.2, 2 * S, th + 6), box(-S, -1.6, -3, 2 * S, 3.2, th + 6)];
-  const grill = K.diff(K.union(rings), spokes);
-  const holes = [];
-  for (const sx of [-1, 1]) for (const sy of [-1, 1]) holes.push(cylZ(sx * hs / 2, sy * hs / 2, -1, S <= 40 ? 3.4 : 4.4, th + 2));
-  return K.union([grill, ...holes]);
-}
-function fanPad(K, S, th) { return K.tr(K.cube([S + 6, S + 6, th]), [-S / 2 - 3, -S / 2 - 3, 0]); }
-function placeOnSurf(K, s, fr, la, lb) {
-  if (fr.n === 'y') return K.tr(K.rot(s, [-90, 0, 0]), [la, fr.n0, lb]);
-  if (fr.n === 'x') return K.tr(K.rot(s, [0, 90, 0]), [fr.n0, la, lb]);
-  return K.tr(s, [la, lb, fr.n0]);
-}
-function fanLocal(f, inst, fr) {
-  if (fr.n === 'y') return [f.a - inst.t[0], f.b - inst.t[2]];
-  if (fr.n === 'x') return [f.a - inst.t[1], f.b - inst.t[2]];
-  return [f.a, f.b];
-}
-// Zona donde puede ir el centro de un ventilador de tamaño S en una superficie (coords locales de la pieza)
-function fanBounds(fr, g, S) {
-  const m = S / 2 + 3;
-  if (fr.n === 'y') return { a: [g.FL_W + m + 1, g.W - g.FL_W - m - 1], b: [m, fr.hb - m] };
-  if (fr.n === 'x') return { a: [g.RS + 2 + m, g.D - g.RS - 2 - m], b: [6 + m, fr.hb - 6 - m] };
-  return { a: [g.RF + 3 + m, g.W - g.RF - 3 - m], b: [g.RS + 3 + m, g.D - g.RS - 3 - m] };
-}
-// Ajusta un punto de clic (coords de montaje) a una posición válida; null si no cabe
-function snapFan(part, inst, g, S, a, b) {
-  const fr = part.fan; if (!fr) return null;
-  const bd = fanBounds(fr, g, S);
-  if (bd.a[0] > bd.a[1] || bd.b[0] > bd.b[1]) return null;
-  const [la, lb] = fanLocal({ a, b }, inst, fr);
-  const ca = Math.min(bd.a[1], Math.max(bd.a[0], la)), cb = Math.min(bd.b[1], Math.max(bd.b[0], lb));
-  const off = fr.n === 'y' ? [inst.t[0], inst.t[2]] : fr.n === 'x' ? [inst.t[1], inst.t[2]] : [0, 0];
-  return { surf: fr.surf, a: Math.round((ca + off[0]) * 2) / 2, b: Math.round((cb + off[1]) * 2) / 2, s: S };
-}
-// Posición 3D (centro y normal) de un ventilador para la maqueta
-function fanPose(f, g) {
-  const top = g.Z0 + g.NU * U - g.POCKET;
-  switch (f.surf) {
-    case 'front': return { c: [f.a, 12.5, f.b], n: 'y' };
-    case 'rear': return { c: [f.a, g.D - 12.5, f.b], n: 'y' };
-    case 'left': return { c: [g.RT + g.WALL + 12.5, f.a, f.b], n: 'x' };
-    case 'right': return { c: [g.W - g.RT - g.WALL - 12.5, f.a, f.b], n: 'x' };
-    case 'top': return { c: [f.a, f.b, top - 12.5], n: 'z' };
-    case 'bottom': return { c: [f.a, f.b, g.PLATE_T + 12.5], n: 'z' };
-  }
-}
-
-function applyFans(P, cfg, g) {
-  const fans = cfg.fans || [];
-  if (!fans.length) return P;
+  const fans = {};
+  for (const p of cfg.panels) for (const s of p.shapes) if (s.t === 'fan') fans[s.s] = (fans[s.s] || 0) + 1;
+  const ks = cfg.panels.reduce((n, p) => n + p.shapes.filter(s => s.t === 'keystone').reduce((m, s) => m + s.n, 0), 0);
   const out = [];
-  for (const p of P) {
-    if (!p.fan) { out.push(p); continue; }
-    const fr = p.fan, groups = new Map();
-    for (const inst of p.inst) {
-      const list = [];
-      for (const f of fans) {
-        if (f.surf !== fr.surf) continue;
-        const [la, lb] = fanLocal(f, inst, fr);
-        const bd = fanBounds(fr, g, f.s);
-        if (la >= bd.a[0] - 0.6 && la <= bd.a[1] + 0.6 && lb >= bd.b[0] - 0.6 && lb <= bd.b[1] + 0.6) list.push([+la.toFixed(1), +lb.toFixed(1), f.s]);
-      }
-      const k = JSON.stringify(list);
-      if (!groups.has(k)) groups.set(k, { list, inst: [] });
-      groups.get(k).inst.push(inst);
-    }
-    let n = 0;
-    for (const { list, inst } of groups.values()) {
-      if (!list.length) { out.push({ ...p, inst }); continue; }
-      n++;
-      const base = p.build;
-      out.push({ ...p, inst, id: `${p.id}_vent${groups.size > 1 || n > 1 ? n : ''}`, name: `${p.name} · ${list.length} vent. ${list.map(l => l[2]).join('+')} mm`,
-        sig: p.sig + '|fans' + JSON.stringify(list), fans: list,
-        build: K => {
-          const s = base(K);
-          const pads = list.map(([la, lb, S]) => placeOnSurf(K, fanPad(K, S, fr.th), fr, la, lb));
-          const cuts = list.map(([la, lb, S]) => placeOnSurf(K, fanCut(K, S, fr.th), fr, la, lb));
-          return K.diff(K.union([s, ...pads]), cuts);
-        } });
-    }
+  if (g.printed) {
+    const segs = railSegments(cfg, g);
+    out.push([`Insertos roscados M5 (Ø6,4) en los raíles impresos, uno por tornillo de tapa`, ears]);
+    out.push(['Tornillos M5×12 para las tapas frontales y traseras', ears]);
+    out.push(['Insertos roscados M4 (Ø5,6) en el ala lateral de los raíles', sideBolts]);
+    if (segs.length > 1) out.push(['Espigas de acero de 3×16 mm entre tramos de raíl', (segs.length - 1) * 4 * 2]);
+  } else {
+    out.push([`Raíles metálicos de ${g.NU}U (${String((g.NU * U).toFixed(1)).replace('.', ',')} mm), perfil en L, agujero cuadrado`, 4]);
+    out.push(['Tuercas enjauladas M6 + tornillos M6×12 para las tapas frontales y traseras', ears]);
+    out.push(['Taladros de 4,5 mm en el ala lateral del raíl para los laterales', sideBolts]);
   }
+  out.push(['Tornillos M4×10 + tuerca, lateral–raíl', sideBolts]);
+  out.push(['Insertos roscados M4 (bloques de esquina y patas)', 8 * 2 + 4]);
+  out.push(['Tornillos M4×16 avellanados tapa–bloque', 8]);
+  out.push(['Tornillos M4×20 para patas', 4]);
+  if (shelves.length) out.push(['Tornillos M3×10 + tuerca, bandeja–tapa', shelves.length * tabs * 2]);
+  for (const [sz, n] of Object.entries(fans)) out.push([`Ventilador de ${sz} mm (+4 tornillos de ventilador)`, n]);
+  if (ks) out.push(['Conectores keystone RJ45', ks]);
+  const placas = shelves.filter(s => s.type === 'placa').length;
+  if (placas) { out.push(['Insertos M3 + tornillos M3×8 para la placa base', 8 * placas]); out.push(['Tornillos M3×10 placa de montaje–bandeja', 3 * placas]); }
   return out;
 }
 
@@ -1004,7 +1235,7 @@ function generatePart(K, part, bed) {
 }
 
 // ===================================================================
-//  Interfaz: estado, visor 3D, lista de piezas y descargas
+//  Interfaz v2: raíles, tapas con diseño 2D, baldas, visor 3D y descargas
 // ===================================================================
 
 
@@ -1020,129 +1251,197 @@ const PRESETS = {
   k1max: { name: 'Creality K1 Max', bed: [300, 300, 300] },
   custom: { name: 'Personalizada', bed: null },
 };
-const STORE = 'rack-config-v1';
+const STORE = 'rack-config-v2';
+const SIDE_ORDER = ['front', 'rear', 'left', 'right', 'top'];
 const $ = (id) => document.getElementById(id);
 const fmt = (n, d = 0) => n.toLocaleString('es-ES', { minimumFractionDigits: d, maximumFractionDigits: d });
+const esc = (s) => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 
 let cfg = load();
 let K = null;
-const cache = new Map();          // sig|bed -> { pieces, split }
+const cache = new Map();
 let current = { parts: [], g: null, results: new Map() };
-let selected = null;              // { partId, pieceIdx }
+let selected = null;
 let viewMode = 'asm';
 let runToken = 0;
 
 function load() {
   try {
     const s = JSON.parse(localStorage.getItem(STORE));
-    if (s && s.modules) {
-      // configuraciones guardadas antes de existir el margen: pasar a "mis impresoras"
-      if (s.bedMargin === undefined) { s.bed = [250, 220, 256]; s.bedPreset = 'mine'; s.bedMargin = 2; }
-      return { ...defaultConfig(), ...s };
-    }
+    if (s && s.v === 2 && Array.isArray(s.panels)) return syncConfig({ ...defaultConfig(), ...s });
   } catch (e) {}
   return defaultConfig();
 }
 function save() { try { localStorage.setItem(STORE, JSON.stringify(cfg)); } catch (e) {} }
+function effBed() { const m = +(cfg.bedMargin ?? 0) || 0; return [cfg.bed[0] - 2 * m, cfg.bed[1] - 2 * m, cfg.bed[2]]; }
 
-// ------------------------------------------------------------------ UI
+// ------------------------------------------------------------------ UI lateral
 function initControls() {
-  const sel = $('addType');
-  for (const [k, t] of Object.entries(MODULE_TYPES)) sel.add(new Option(t.name, k));
-  sel.value = 'shelf';
   const ps = $('preset');
   for (const [k, p] of Object.entries(PRESETS)) ps.add(new Option(p.name, k));
+  for (const s of SIDE_ORDER) $('addSide').add(new Option(SIDES[s], s));
+  for (const [k, t] of Object.entries(SHELF_TYPES)) $('addShelfType').add(new Option(t.name, k));
 
-  $('std').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; cfg.std = b.dataset.v; changed(); });
+  $('std').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; cfg.std = b.dataset.v; changed(true); });
+  $('rails').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; cfg.rails = b.dataset.v; changed(true); });
   $('view').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; setView(b.dataset.v); });
-  const num = (id, key, lo, hi) => $(id).addEventListener('change', e => { const v = clamp(+e.target.value, lo, hi); if (!isNaN(v)) { cfg[key] = v; changed(); } });
-  num('bedM', 'bedMargin', 0, 20);
-  num('depth', 'depth', 180, 450); num('extraU', 'extraU', 0, 12); num('wall', 'wall', 2.4, 5); num('faceT', 'faceT', 3, 6);
+  const num = (id, key, lo, hi, round) => $(id).addEventListener('change', e => { let v = +e.target.value; if (isNaN(v)) return; v = clamp(round ? Math.round(v) : v, lo, hi); cfg[key] = v; changed(true); });
+  num('bedM', 'bedMargin', 0, 20); num('depth', 'depth', 180, 450); num('NU', 'NU', 1, 42, true); num('wall', 'wall', 2.4, 5); num('faceT', 'faceT', 3, 6);
   $('depthR').addEventListener('input', e => { $('depth').value = e.target.value; });
-  $('depthR').addEventListener('change', e => { cfg.depth = +e.target.value; changed(); });
+  $('depthR').addEventListener('change', e => { cfg.depth = +e.target.value; changed(true); });
   ps.addEventListener('change', e => { cfg.bedPreset = e.target.value; const p = PRESETS[cfg.bedPreset]; if (p.bed) cfg.bed = [...p.bed]; changed(); });
   ['bedX', 'bedY', 'bedZ'].forEach((id, i) => $(id).addEventListener('change', e => { const v = clamp(+e.target.value, 100, 600); if (!isNaN(v)) { cfg.bed[i] = v; cfg.bedPreset = 'custom'; changed(); } }));
   $('showDevices').addEventListener('change', e => { cfg.showDevices = e.target.checked; save(); rebuildScene(); });
   $('showRails').addEventListener('change', e => { cfg.showRails = e.target.checked; save(); rebuildScene(); });
-  $('addBtn').addEventListener('click', () => { cfg.modules.push(defaultModule($('addType').value)); changed(); });
   $('reset').addEventListener('click', () => { cfg = defaultConfig(); selected = null; changed(); });
   $('dlAll').addEventListener('click', downloadAll);
   $('dlSel').addEventListener('click', downloadSelected);
 
-  const stack = $('stack');
-  stack.addEventListener('click', e => {
-    const b = e.target.closest('button[data-act]'); if (!b) return;
-    const i = +b.closest('.mod').dataset.i, act = b.dataset.act, M = cfg.modules;
-    if (act === 'up' && i < M.length - 1) [M[i], M[i + 1]] = [M[i + 1], M[i]];
-    if (act === 'down' && i > 0) [M[i], M[i - 1]] = [M[i - 1], M[i]];
-    if (act === 'del') M.splice(i, 1);
+  $('addPanel').addEventListener('click', () => {
+    const side = $('addSide').value, fr = firstFree(cfg, side);
+    if (!fr) { toast(side === 'top' ? 'Ya hay una tapa superior.' : `El ${SIDES[side].toLowerCase()} ya está cubierto. Acorta una tapa para hacer hueco.`); return; }
+    cfg.panels.push(makePanel(cfg, side, fr.u0, fr.nu, side === 'top' || side === 'left' || side === 'right' ? 'ranuras' : 'lisa'));
     changed();
   });
-  stack.addEventListener('change', e => {
-    const el = e.target, mod = el.closest('.mod'); if (!mod) return;
-    const m = cfg.modules[+mod.dataset.i], f = el.dataset.f;
-    if (f === 'label') m.label = el.value.slice(0, 40);
-    else if (f === 'button') m.button = el.checked;
-    else if (f.startsWith('dev')) { const v = clamp(+el.value, 10, 600); if (!isNaN(v)) m.dev[+f[3]] = v; }
-    else { const v = Math.round(+el.value); if (!isNaN(v)) m[f] = clamp(v, +el.min, +el.max); }
+  $('addShelf').addEventListener('click', () => {
+    const g = derive(cfg);
+    let u = 1; for (const s of cfg.shelves) u = Math.max(u, s.u + shelfSpan(s, g));
+    if (u > g.NU) u = g.NU;
+    cfg.shelves.push(defaultShelf($('addShelfType').value, u));
     changed();
+  });
+
+  const pl = $('panelList');
+  pl.addEventListener('click', e => {
+    const b = e.target.closest('button[data-act]'); if (!b) return;
+    const id = b.closest('[data-pid]').dataset.pid, i = cfg.panels.findIndex(p => p.id === id);
+    if (b.dataset.act === 'del') { cfg.panels.splice(i, 1); changed(); }
+    if (b.dataset.act === 'edit') openEditor(id);
+  });
+  pl.addEventListener('change', e => {
+    const el = e.target, row = el.closest('[data-pid]'); if (!row) return;
+    const p = cfg.panels.find(x => x.id === row.dataset.pid), f = el.dataset.f;
+    if (f === 'tpl') { p.tpl = el.value; p.auto = true; }
+    else { const v = Math.round(+el.value); if (!isNaN(v)) p[f] = v; }
+    changed(true);
+  });
+  const sl = $('shelfList');
+  sl.addEventListener('click', e => {
+    const b = e.target.closest('button[data-act]'); if (!b) return;
+    const i = cfg.shelves.findIndex(s => s.id === b.closest('[data-sid]').dataset.sid);
+    if (b.dataset.act === 'del') { cfg.shelves.splice(i, 1); changed(); }
+  });
+  sl.addEventListener('change', e => {
+    const el = e.target, row = el.closest('[data-sid]'); if (!row) return;
+    const s = cfg.shelves.find(x => x.id === row.dataset.sid), f = el.dataset.f;
+    if (f === 'label') s.label = el.value.slice(0, 40);
+    else if (f.startsWith('dev')) { const v = clamp(+el.value, 10, 600); if (!isNaN(v)) s.dev[+f[3]] = v; }
+    else { const v = Math.round(+el.value); if (!isNaN(v)) s[f] = clamp(v, +el.min, +el.max); }
+    changed(true);
   });
 }
-function effBed() { const m = +(cfg.bedMargin ?? 0) || 0; return [cfg.bed[0] - 2 * m, cfg.bed[1] - 2 * m, cfg.bed[2]]; }
-const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 
 function renderControls() {
   const g = derive(cfg);
-  $('std').querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === cfg.std)));
-  $('view').querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === viewMode)));
-  $('depth').value = cfg.depth; $('depthR').value = cfg.depth; $('extraU').value = cfg.extraU; $('wall').value = cfg.wall; $('faceT').value = cfg.faceT;
+  const pressed = (id, v) => $(id).querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === v)));
+  pressed('std', cfg.std); pressed('view', viewMode); pressed('rails', cfg.rails);
+  $('depth').value = cfg.depth; $('depthR').value = cfg.depth; $('NU').value = cfg.NU; $('wall').value = cfg.wall; $('faceT').value = cfg.faceT;
   $('preset').value = cfg.bedPreset in PRESETS ? cfg.bedPreset : 'custom';
   $('bedM').value = cfg.bedMargin ?? 0;
   const eb = effBed(); $('bedEff').textContent = `Zona útil para las piezas: ${fmt(eb[0])} × ${fmt(eb[1])} × ${fmt(eb[2])} mm`;
   $('bedX').value = cfg.bed[0]; $('bedY').value = cfg.bed[1]; $('bedZ').value = cfg.bed[2];
   $('showDevices').checked = cfg.showDevices !== false; $('showRails').checked = cfg.showRails !== false;
-  const outerD = g.D + 2 * g.FT, outerH = g.H + 12;
-  $('dims').innerHTML = `<span><b>${g.NU}U</b> de raíl</span><span>ancho <b>${fmt(g.W, 1)}</b></span><span>fondo <b>${fmt(outerD)}</b></span><span>alto <b>${fmt(outerH)}</b> mm</span>`;
+  $('dims').innerHTML = `<span><b>${g.NU}U</b></span><span>ancho <b>${fmt(g.W, 1)}</b></span><span>fondo <b>${fmt(g.D + 2 * g.FT)}</b></span><span>alto <b>${fmt(g.H + 12)}</b> mm</span>`;
 
-  const lay = moduleLayout(cfg);
-  let html = '';
-  if (cfg.extraU > 0) html += `<div class="free-u">U${g.NU - cfg.extraU + 1}–${g.NU} · ${cfg.extraU}U libres</div>`;
-  for (let k = lay.length - 1; k >= 0; k--) {
-    const { m, i, u0 } = lay[k], T = MODULE_TYPES[m.type];
-    const range = m.u > 1 ? `U${u0}–${u0 + m.u - 1}` : `U${u0}`;
-    const uMax = m.type === 'patch' ? 1 : m.type === 'compute' ? 8 : 8;
-    let rows = '';
-    if (m.type !== 'patch') rows += `<label>Alto <input type="number" data-f="u" min="${T.minU}" max="${uMax}" value="${m.u}"> U</label>`;
-    if (m.type === 'storage') rows += `<label>HDD 3,5″ <input type="number" data-f="hdd" min="0" max="4" value="${m.hdd}"></label><label>SSD 2,5″ <input type="number" data-f="ssd" min="0" max="8" value="${m.ssd}"></label>`;
-    if (m.type === 'compute') rows += `<label>SSD 2,5″ <input type="number" data-f="ssd" min="0" max="8" value="${m.ssd}"></label><label><input type="checkbox" data-f="button" ${m.button ? 'checked' : ''}> Pulsador + LED</label>`;
-    if (m.type === 'patch') rows += `<label>Keystones <input type="number" data-f="keystones" min="1" max="${Math.floor((g.OPEN - 10) / 25)}" value="${m.keystones}"></label>`;
-    let extra = '';
-    if (m.dev) extra = `<div class="row"><input type="text" data-f="label" value="${esc(m.label || '')}" aria-label="Nombre del equipo" placeholder="Nombre del equipo"></div>
-      <div class="row"><span>Equipo (mm)</span><label>an <input type="number" data-f="dev0" min="10" max="600" value="${m.dev[0]}"></label><label>fo <input type="number" data-f="dev1" min="10" max="600" value="${m.dev[1]}"></label><label>al <input type="number" data-f="dev2" min="5" max="400" value="${m.dev[2]}"></label></div>`;
-    if (m.type === 'compute') extra = `<div class="row free">Placa micro-ATX 244×244 en vertical (HP IPM17-002), fuente SFX.</div>`;
-    html += `<div class="mod" data-i="${i}"><div class="u">${range}<span>${m.u}U</span></div><div class="body">
-      <div class="top"><strong title="${esc(T.name)}">${esc(m.label && m.dev ? m.label : T.name)}</strong>
-        <button type="button" class="icon" data-act="up" aria-label="Subir" ${i === cfg.modules.length - 1 ? 'disabled' : ''}>▲</button>
-        <button type="button" class="icon" data-act="down" aria-label="Bajar" ${i === 0 ? 'disabled' : ''}>▼</button>
-        <button type="button" class="icon" data-act="del" aria-label="Quitar">✕</button></div>
-      ${rows ? `<div class="row">${rows}</div>` : ''}${extra}</div></div>`;
+  // raíles
+  const railMm = fmt(g.NU * U, 1);
+  if (cfg.rails === 'metal') {
+    $('railInfo').innerHTML = `<p>4 raíles en L de <b>${g.NU}U (${railMm} mm)</b>, ala frontal de 15,8 mm y lateral de 20 mm, agujero cuadrado para tuerca enjaulada M6. Si son más largos, córtalos a ${railMm} mm.</p>
+      <p class="sub">Dónde comprarlos:</p><ul class="links">${RAIL_SHOPS.map(s => `<li><a href="${s.url}" target="_blank" rel="noopener">${esc(s.name)}</a></li>`).join('')}</ul>`;
+  } else {
+    const segs = railSegments({ ...cfg, bed: effBed() }, g);
+    $('railInfo').innerHTML = `<p>Se imprimen 4 raíles en L de 5 mm de grosor, en ${segs.length} tramo${segs.length > 1 ? 's' : ''} (${segs.map(n => n + 'U').join(' + ')}) unidos con espigas de 3 mm. Llevan insertos roscados M5 para las tapas y M4 para los laterales.</p>
+      <p class="sub">Imprime en PETG o ASA con 5 perímetros. Para un rack cargado, mejor raíles metálicos.</p>`;
   }
-  if (!cfg.modules.length) html += `<div class="free-u">Sin módulos. Añade uno abajo.</div>`;
-  $('stack').innerHTML = html;
 
-  renderFans();
-  const w = deviceWarnings(cfg, g);
-  if (g.NU !== 14) w.unshift(`El rack mide ${g.NU}U. Tus raíles son de 14U: córtalos a ${fmt(g.NU * U, 1)} mm o usa raíles de ${g.NU}U.`);
-  if (cfg.std === '19') w.push('En 19″ casi todas las piezas grandes se parten en trozos. Revisa la lista de impresión.');
-  $('warnSec').hidden = true;
-  $('warns').innerHTML = w.map(t => `<div class="warn">${esc(t)}</div>`).join('');
+  // tapas
+  const clash = panelClashes(cfg);
+  const cover = {};
+  for (const s of SIDE_ORDER) cover[s] = 0;
+  for (const p of cfg.panels) cover[p.side] += p.side === 'top' ? 1 : p.nu;
+  let html = '';
+  for (const side of SIDE_ORDER) {
+    const list = cfg.panels.filter(p => p.side === side).sort((a, b) => b.u0 - a.u0);
+    const need = side === 'top' ? 1 : g.NU;
+    html += `<div class="pgroup"><div class="pghead">${SIDES[side]}<span>${side === 'top' ? (list.length ? '' : 'sin tapa') : `${Math.min(cover[side], need)}/${need}U cubiertas`}</span></div>`;
+    for (const p of list) {
+      const tplOpts = Object.entries(TEMPLATES).filter(([k]) => k !== 'patch' || side === 'front' || side === 'rear')
+        .map(([k, n]) => `<option value="${k}"${p.auto && p.tpl === k ? ' selected' : ''}>${n}</option>`).join('') + (p.auto ? '' : '<option value="" selected>Diseño propio</option>');
+      const range = side === 'top' ? '' : `<label>U <input type="number" data-f="u0" min="1" max="${g.NU}" value="${p.u0}" aria-label="Primera U"></label><label>alto <input type="number" data-f="nu" min="1" max="${g.NU}" value="${p.nu}" aria-label="Alto en U"></label>`;
+      html += `<div class="prow${clash.has(p.id) ? ' clash' : ''}" data-pid="${p.id}">
+        <div class="prev" aria-hidden="true">${miniSvg(p, g)}</div>
+        <div class="pbody"><div class="top"><strong>${esc(panelLabel(p))}</strong>
+          <button type="button" class="btn sm" data-act="edit">Diseñar</button>
+          <button type="button" class="icon" data-act="del" aria-label="Quitar tapa">✕</button></div>
+          <div class="row">${range}<select data-f="tpl" aria-label="Plantilla">${tplOpts}</select></div>
+          ${clash.has(p.id) ? '<div class="row bad">Se pisa con otra tapa del mismo lado</div>' : ''}</div></div>`;
+    }
+    html += '</div>';
+  }
+  $('panelList').innerHTML = html;
+
+  // baldas
+  let sh = '';
+  const shelves = [...cfg.shelves].sort((a, b) => b.u - a.u);
+  for (const s of shelves) {
+    const span = shelfSpan(s, g), T = SHELF_TYPES[s.type];
+    let rows = `<label>en U <input type="number" data-f="u" min="1" max="${g.NU}" value="${s.u}"></label><span class="sub">ocupa ${span}U</span>`;
+    if (s.type === 'discos') rows += `<label>HDD <input type="number" data-f="hdd" min="0" max="4" value="${s.hdd}"></label><label>SSD <input type="number" data-f="ssd" min="0" max="8" value="${s.ssd}"></label>`;
+    if (s.type === 'placa') rows += `<label>SSD <input type="number" data-f="ssd" min="0" max="8" value="${s.ssd}"></label>`;
+    let extra = '';
+    if (s.dev) extra = `<div class="row"><input type="text" data-f="label" value="${esc(s.label || '')}" aria-label="Nombre del equipo" placeholder="Nombre del equipo"></div>
+      <div class="row"><span>Equipo (mm)</span><label>an <input type="number" data-f="dev0" min="10" max="600" value="${s.dev[0]}"></label><label>fo <input type="number" data-f="dev1" min="10" max="600" value="${s.dev[1]}"></label><label>al <input type="number" data-f="dev2" min="5" max="400" value="${s.dev[2]}"></label></div>`;
+    const covered = cfg.panels.some(p => p.side === 'front' && s.u >= p.u0 && s.u < p.u0 + p.nu) && cfg.panels.some(p => p.side === 'rear' && s.u >= p.u0 && s.u < p.u0 + p.nu);
+    sh += `<div class="mod" data-sid="${s.id}"><div class="u">U${s.u}<span>${span}U</span></div><div class="body">
+      <div class="top"><strong>${esc(s.dev && s.label ? s.label : T.name)}</strong><button type="button" class="icon" data-act="del" aria-label="Quitar balda">✕</button></div>
+      <div class="row">${rows}</div>${extra}
+      ${covered ? '' : '<div class="row bad">Falta tapa frontal o trasera en esta U para atornillar la bandeja</div>'}</div></div>`;
+  }
+  if (!shelves.length) sh = '<div class="free-u">Sin baldas. Añade una abajo.</div>';
+  $('shelfList').innerHTML = sh;
 }
-const esc = (s) => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+// Miniatura del diseño de una tapa
+function miniSvg(p, g) {
+  const { Lw, Lh } = panelDims(p, g);
+  const s = 46 / Math.max(Lw, Lh);
+  const w = Lw * s, h = Lh * s;
+  let body = '';
+  for (const sh of p.shapes) for (const q of prims(sh)) body += primSvg(q, Lh);
+  return `<svg viewBox="0 0 ${Lw} ${Lh}" width="${w.toFixed(1)}" height="${h.toFixed(1)}"><rect width="${Lw}" height="${Lh}" class="pf"/><g class="pc">${body}</g></svg>`;
+}
+function primSvg(q, Lh, cls = '') {
+  const Y = (y) => (Lh - y).toFixed(2);
+  if (q.k === 'c') return `<circle cx="${q.x}" cy="${Y(q.y)}" r="${q.d / 2}"${cls}/>`;
+  if (q.k === 'r') return `<rect x="${(q.x - q.w / 2).toFixed(2)}" y="${Y(q.y + q.h / 2)}" width="${q.w}" height="${q.h}" rx="${q.r}"${cls}/>`;
+  if (q.k === 'p') return `<polygon points="${q.pts.map(([x, y]) => x.toFixed(2) + ',' + Y(y)).join(' ')}"${cls}/>`;
+  if (q.k === 'f') {
+    const hs = (FAN_SIZES[q.s] || q.s * 0.85) / 2, r = q.s / 2 - 1;
+    let o = `<rect x="${q.x - q.s / 2 - 2}" y="${Y(q.y + q.s / 2 + 2)}" width="${q.s + 4}" height="${q.s + 4}" class="fanbg"/><circle cx="${q.x}" cy="${Y(q.y)}" r="${r}"${cls} class="fanring"/>`;
+    for (let k = Math.min(7, q.s * 0.11) + 3; k + 3 <= q.s / 2 - 2.5; k += 7) o += `<circle cx="${q.x}" cy="${Y(q.y)}" r="${k + 2}" class="fanline"/>`;
+    for (const sx of [-1, 1]) for (const sy of [-1, 1]) o += `<circle cx="${q.x + sx * hs}" cy="${Y(q.y + sy * hs)}" r="2.2"${cls}/>`;
+    return o;
+  }
+  return '';
+}
 
 let debounce = 0;
-function changed() {
+function changed(sync) {
+  if (sync) syncConfig(cfg);
   save(); renderControls();
-  clearTimeout(debounce); debounce = setTimeout(regenerate, 180);
+  if (ed) renderEditor();
+  clearTimeout(debounce); debounce = setTimeout(regenerate, 220);
 }
 
 // ------------------------------------------------------------------ motor
@@ -1168,10 +1467,10 @@ async function regenerate() {
   current = { parts, g, results: new Map() };
   const bedKey = ecfg.bed.join('x');
   const todo = parts.filter(p => !cache.has(p.sig + '|' + bedKey));
-  let done = 0; const t0 = performance.now();
   for (const p of parts) { const r = cache.get(p.sig + '|' + bedKey); if (r) current.results.set(p.id, r); }
+  if (selected && !parts.some(p => p.id === selected.partId)) selected = null;
   rebuildScene(); renderParts();
-  setStatus(todo.length ? `Generando 0/${todo.length}…` : 'Listo', todo.length ? 0 : 1);
+  let done = 0;
   for (const p of todo) {
     await new Promise(r => setTimeout(r, 0));
     if (token !== runToken) return;
@@ -1179,20 +1478,16 @@ async function regenerate() {
     try { r = generatePart(K, p, ecfg.bed); } catch (e) { console.error(p.id, e); r = { pieces: [], error: String(e) }; }
     cache.set(p.sig + '|' + bedKey, r);
     current.results.set(p.id, r);
-    done++;
-    setStatus(`Generando ${done}/${todo.length}…`, done / todo.length);
     addPartToScene(p);
-    if (done % 4 === 0) renderParts();
+    if (++done % 4 === 0) renderParts();
   }
   if (token !== runToken) return;
   if (cache.size > 400) { const keep = new Set(parts.map(p => p.sig + '|' + bedKey)); for (const k of cache.keys()) if (!keep.has(k)) cache.delete(k); }
   renderParts();
-  setStatus(`Listo · ${todo.length ? fmt((performance.now() - t0) / 1000, 1) + ' s · ' : ''}motor ${K.name === 'manifold' ? 'Manifold' : 'JSCAD'}`, 1);
   if (viewMode === 'bed') showBed();
 }
-function setStatus(t, f) { $('status').textContent = t; $('barI').style.width = (f * 100).toFixed(0) + '%'; $('status').parentElement.hidden = t.startsWith('Listo'); }
 
-// ------------------------------------------------------------------ lista
+// ------------------------------------------------------------------ lista de piezas
 function pieceRows() {
   const rows = [];
   for (const p of current.parts) {
@@ -1218,7 +1513,7 @@ function renderParts() {
   }
   $('tbody').innerHTML = html;
   const pending = rows.some(r => r.pending);
-  $('sum').innerHTML = `<b>${prints}</b> impresiones de <b>${models}</b> modelos · <b>≈ ${fmt(grams / 1000, 2)} kg</b> de filamento (PLA/PETG, 4 perímetros, 25 % relleno)${bad ? ` · <b style="color:var(--bad)">${bad} no caben</b>` : ''}`;
+  $('sum').innerHTML = pending ? `Generando piezas… <b>${rows.filter(r => !r.pending).length}</b>` : `<b>${prints}</b> impresiones de <b>${models}</b> modelos · <b>≈ ${fmt(grams / 1000, 2)} kg</b> de filamento${bad ? ` · <b style="color:var(--bad)">${bad} no caben</b>` : ''}`;
   $('dlAll').disabled = pending || !models;
   $('dlSel').disabled = pending || !selected;
   $('hwul').innerHTML = hardware(cfg, current.g, current.parts).map(([t, n]) => `<li><b>${n}×</b> ${esc(t)}</li>`).join('');
@@ -1230,12 +1525,6 @@ $('tbody').addEventListener('click', e => {
 function select(partId, pieceIdx) {
   selected = partId ? { partId, pieceIdx } : null;
   renderParts(); highlight();
-  const box = $('selBox');
-  const p = selected && current.parts.find(x => x.id === partId);
-  const pc = p && current.results.get(p.id)?.pieces[pieceIdx];
-  if (false) {
-    box.innerHTML = `${esc(p.name)} ${pc.label ? `<span class="sub">${pc.label}</span>` : ''} · <b>${p.inst.length}×</b> · <b>${pc.size.map(v => fmt(v)).join('×')}</b> mm`;
-  } else box.hidden = true;
   if (viewMode === 'bed') showBed();
 }
 
@@ -1285,16 +1574,24 @@ function mat(color, opts = {}) {
   if (!matCache.has(k)) matCache.set(k, new THREE.MeshStandardMaterial({ color, roughness: 0.62, metalness: 0.02, ...opts }));
   return matCache.get(k);
 }
+function zSpread(z) { const g = current.g; return (z - g.Z0) / (g.NU * U) * 160; }
 function explodeOffset(p, inst) {
   if (viewMode !== 'exp') return [0, 0, 0];
-  const g = current.g, e = p.explode || [0, 0, 0];
-  const o = [e[0] * 90, e[1] * 140, e[2] * 90];
-  if (p.id.startsWith('pared_')) o[0] = p.id.includes('_izq') ? -110 : 110;
-  if (p.id === 'bloque_esquina') o[0] = (inst.s && inst.s[0] < 0) ? 50 : -50;
-  if (p.id.startsWith('pared_') || /^m\d|^trasera/.test(p.id)) o[2] += (inst.t[2] - g.Z0) / (g.NU * U) * 160;
-  const top = p.id.startsWith('tapa_superior');
-  if (top || (p.id === 'bloque_esquina' && inst.s && inst.s[2] < 0)) o[2] += 160 + (top ? 90 : 40);
-  return o;
+  const zf = zSpread(inst.t[2]);
+  if (p.rail) return [(inst.s[0] < 0 ? 1 : -1) * 40, (inst.s[1] < 0 ? 1 : -1) * 40, zf + 20 * (inst.t[2] > current.g.Z0 + 1)];
+  switch (p.side) {
+    case 'front': return [0, -140, zf];
+    case 'rear': return [0, 140, zf];
+    case 'left': return [-110, 0, zf];
+    case 'right': return [110, 0, zf];
+    case 'top': return [0, 0, 250];
+  }
+  if (p.id === 'bloque_esquina') return [(inst.s && inst.s[0] < 0) ? 50 : -50, 0, inst.s && inst.s[2] < 0 ? 200 : 0];
+  if (p.shelfId) return [0, 0, zf];
+  if (p.id === 'base') return [0, 0, -90];
+  if (p.id === 'pata') return [0, 0, -135];
+  if (p.id.startsWith('tapa_superior')) return [0, 0, 250];
+  return [0, 0, 0];
 }
 function addPartToScene(p) {
   const r = current.results.get(p.id); if (!r) return;
@@ -1304,11 +1601,10 @@ function addPartToScene(p) {
     for (const inst of p.inst) {
       const m = new THREE.Mesh(geo, mat(p.color));
       const o = explodeOffset(p, inst);
-      // con varios trozos, separa un poco en despiece para ver las uniones
       const cut = r.pieces.length > 1 && viewMode === 'exp' ? k * 6 : 0;
       m.position.set(inst.t[0] + o[0] + cut, inst.t[1] + o[1] + cut * 0.3, inst.t[2] + o[2] + cut * 0.3);
       if (inst.s) m.scale.set(...inst.s);
-      m.userData = { partId: p.id, pieceIdx: k, inst };
+      m.userData = { partId: p.id, pieceIdx: k, inst, panelId: p.panelId };
       partGroup.add(m);
     }
   });
@@ -1320,17 +1616,17 @@ function rebuildScene() {
   for (const p of current.parts) addPartToScene(p);
   if (cfg.showDevices !== false) for (const [x, y, z, sx, sy, sz, col] of mockups(cfg, g)) {
     const m = new THREE.Mesh(new THREE.BoxGeometry(sx, sy, sz), mat(col, { transparent: true, opacity: 0.88, roughness: 0.5 }));
-    const ez = viewMode === 'exp' ? (z - g.Z0) / (g.NU * U) * 160 : 0;
-    m.position.set(x + sx / 2, y + sy / 2, z + sz / 2 + ez); mockGroup.add(m);
+    m.position.set(x + sx / 2, y + sy / 2, z + sz / 2 + (viewMode === 'exp' ? zSpread(z) : 0)); mockGroup.add(m);
   }
-  for (const f of cfg.fans || []) fanGroup.add(fanMock(f, g));
-  if (cfg.showRails !== false) {
+  if (viewMode !== 'exp') for (const f of fanPoses(cfg, g)) fanGroup.add(fanMock(f));
+  if (cfg.showRails !== false && !g.printed) {
     const L = g.NU * U, mm = mat('#a7adb4', { metalness: 0.55, roughness: 0.35 });
     for (const [mx, my] of [[1, 1], [-1, 1], [1, -1], [-1, -1]]) {
       const grp = new THREE.Group();
       const a = new THREE.Mesh(new THREE.BoxGeometry(g.RF, g.RT, L), mm); a.position.set(g.RF / 2, g.RT / 2, L / 2);
       const b = new THREE.Mesh(new THREE.BoxGeometry(g.RT, g.RS, L), mm); b.position.set(g.RT / 2, g.RS / 2, L / 2);
       grp.add(a, b); grp.scale.set(mx, my, 1); grp.position.set(mx < 0 ? g.W : 0, my < 0 ? g.D : 0, g.Z0);
+      if (viewMode === 'exp') grp.position.x += (mx < 0 ? 1 : -1) * 40, grp.position.y += (my < 0 ? 1 : -1) * 40;
       railGroup.add(grp);
     }
   }
@@ -1367,7 +1663,7 @@ function showBed() {
   bedGroup.clear();
   root.visible = viewMode !== 'bed';
   if (viewMode !== 'bed') return;
-  const [bx, by] = cfg.bed, c = themeColors();
+  const [bx, by] = cfg.bed;
   const plate = new THREE.Mesh(new THREE.BoxGeometry(bx, by, 2), mat('#2b2f35', { roughness: 0.8 }));
   plate.position.set(bx / 2, by / 2, -1); bedGroup.add(plate);
   const grid = new THREE.GridHelper(Math.max(bx, by), Math.round(Math.max(bx, by) / 20), 0x555b63, 0x3d4249);
@@ -1399,7 +1695,7 @@ function setView(v) {
   if (v === 'bed') { showBed(); return; }
   bedGroup.clear(); root.visible = true; framedFor = ''; rebuildScene();
 }
-// selección con clic
+// clic: seleccionar · doble clic en una tapa: abrir su diseño · modo ventilador: poner/quitar
 const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
 let downAt = null;
 renderer.domElement.addEventListener('pointerdown', e => { downAt = [e.clientX, e.clientY]; });
@@ -1415,6 +1711,11 @@ renderer.domElement.addEventListener('pointerup', e => {
   if (fanMode) { placeFan(hit); return; }
   if (hit) select(hit.object.userData.partId, hit.object.userData.pieceIdx); else select(null);
 });
+renderer.domElement.addEventListener('dblclick', e => {
+  if (fanMode || viewMode === 'bed') return;
+  const hit = pick(e);
+  if (hit && hit.object.userData.panelId) openEditor(hit.object.userData.panelId);
+});
 let moveQueued = null;
 renderer.domElement.addEventListener('pointermove', e => {
   if (!fanMode || e.buttons) return;
@@ -1423,50 +1724,42 @@ renderer.domElement.addEventListener('pointermove', e => {
 });
 renderer.domElement.addEventListener('pointerleave', () => ghostGroup.clear());
 
-// ------------------------------------------------------------------ ventiladores
+// ------------------------------------------------------------------ ventiladores en 3D
 let fanMode = false, fanSize = 80;
-const SURF_AB = { y: (p) => [p.x, p.z], x: (p) => [p.y, p.z], z: (p) => [p.x, p.y] };
 function fanFromHit(hit) {
-  if (!hit) return { err: null };
-  const p = current.parts.find(x => x.id === hit.object.userData.partId);
-  if (!p || !p.fan) return { err: 'Los ventiladores van en frontales, traseras, paredes laterales o tapas.' };
-  const [a, b] = SURF_AB[p.fan.n](hit.point);
-  const near = (cfg.fans || []).findIndex(f => f.surf === p.fan.surf && Math.hypot(f.a - a, f.b - b) < f.s / 2);
-  if (near >= 0) return { remove: near, f: cfg.fans[near] };
-  const f = snapFan(p, hit.object.userData.inst, current.g, fanSize, a, b);
-  if (!f) return { err: `Un ventilador de ${fanSize} mm no cabe en esta pieza. Prueba uno más pequeño.` };
-  const clash = (cfg.fans || []).find(o => o.surf === f.surf && Math.hypot(o.a - f.a, o.b - f.b) < (o.s + f.s) / 2 + 4);
-  return { f, clash };
+  if (!hit) return {};
+  const pid = hit.object.userData.panelId;
+  const p = pid && cfg.panels.find(x => x.id === pid);
+  if (!p) return { err: 'Los ventiladores van en las tapas: frontales, traseras, laterales o superior.' };
+  const [a, b] = worldToPanel(p, hit.point, current.g);
+  const near = p.shapes.findIndex(s => s.t === 'fan' && Math.hypot(s.x - a, s.y - b) < s.s / 2);
+  if (near >= 0) return { p, remove: near, f: p.shapes[near] };
+  const f = fitFan(p, current.g, fanSize, a, b);
+  if (!f) return { err: `Un ventilador de ${fanSize} mm no cabe en esta tapa. Prueba uno más pequeño.` };
+  const clash = p.shapes.some(s => s.t === 'fan' && Math.hypot(s.x - f.x, s.y - f.y) < (s.s + f.s) / 2 + 4);
+  return { p, f, clash };
 }
 function placeFan(hit) {
   const r = fanFromHit(hit);
   if (r.err) { toast(r.err); return; }
   if (!r.f) return;
-  cfg.fans = cfg.fans || [];
-  if (r.remove !== undefined) { cfg.fans.splice(r.remove, 1); toast(`Ventilador de ${r.f.s} mm quitado`); }
+  if (r.remove !== undefined) { r.p.shapes.splice(r.remove, 1); toast(`Ventilador de ${r.f.s} mm quitado`); }
   else if (r.clash) { toast('Se solapa con otro ventilador. Haz clic sobre él para quitarlo.'); return; }
-  else { cfg.fans.push(r.f); toast(`Ventilador de ${r.f.s} mm en ${SURF_NAMES[r.f.surf]}`); }
+  else {
+    // el ventilador sustituye a lo que hubiera debajo de él en la plantilla
+    r.p.shapes.push(r.f); toast(`Ventilador de ${r.f.s} mm en ${panelLabel(r.p)}`);
+  }
+  r.p.auto = false;
   ghostGroup.clear(); changed();
 }
-function surfPose(f, g, out = 0) {
-  const top = g.Z0 + g.NU * U - g.POCKET;
-  switch (f.surf) {
-    case 'front': return { c: [f.a, -g.FT - out, f.b], n: 'y' };
-    case 'rear': return { c: [f.a, g.D + g.FT + out, f.b], n: 'y' };
-    case 'left': return { c: [g.RT - out, f.a, f.b], n: 'x' };
-    case 'right': return { c: [g.W - g.RT + out, f.a, f.b], n: 'x' };
-    case 'top': return { c: [f.a, f.b, top + g.PLATE_T + out], n: 'z' };
-    case 'bottom': return { c: [f.a, f.b, -out], n: 'z' };
-  }
-}
 function orient(obj, n) { if (n === 'y') obj.rotation.set(0, 0, 0); else if (n === 'x') obj.rotation.set(0, 0, Math.PI / 2); else obj.rotation.set(Math.PI / 2, 0, 0); }
-function fanMock(f, g) {
+function fanMock(f) {
   const grp = new THREE.Group();
   const frame = new THREE.Mesh(new THREE.BoxGeometry(f.s, 25, f.s), mat('#26292d', { roughness: 0.7 }));
   const blades = new THREE.Mesh(new THREE.CylinderGeometry(f.s / 2 - 2, f.s / 2 - 2, 26, 32), mat('#3a3f45', { roughness: 0.6 }));
   const hub = new THREE.Mesh(new THREE.CylinderGeometry(f.s * 0.2, f.s * 0.2, 27, 24), mat('#4a6fa5', { roughness: 0.5 }));
   grp.add(frame, blades, hub);
-  const p = fanPose(f, g); orient(grp, p.n); grp.position.set(...p.c);
+  orient(grp, f.n); grp.position.set(...f.c);
   return grp;
 }
 function showGhost(hit) {
@@ -1478,35 +1771,21 @@ function showGhost(hit) {
   const ring = new THREE.Mesh(new THREE.CylinderGeometry(f.s / 2, f.s / 2, 3, 40, 1, true), new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.95, side: THREE.DoubleSide, depthTest: false }));
   const disc = new THREE.Mesh(new THREE.BoxGeometry(f.s + 6, 1.2, f.s + 6), new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.45, depthTest: false }));
   const grp = new THREE.Group(); grp.add(ring, disc); grp.renderOrder = 5; ring.renderOrder = 5; disc.renderOrder = 5;
-  const p = surfPose(f, current.g, 1.5); orient(grp, p.n); grp.position.set(...p.c);
+  const p = panelToWorld(r.p, f.x, f.y, current.g, -1.5); orient(grp, p.n); grp.position.set(...p.c);
   ghostGroup.add(grp);
 }
+const HINT = 'Arrastra para girar · rueda o pellizco para zoom · doble clic en una tapa para diseñarla';
 function setFanMode(on) {
   fanMode = on;
   $('fanBtn').setAttribute('aria-pressed', String(on));
   viewer.classList.toggle('placing', on);
-  $('hint').textContent = on ? `Clic en un frontal, trasera, lateral o tapa para poner un ventilador de ${fanSize} mm · clic sobre uno para quitarlo · Esc para terminar`
-    : 'Arrastra para girar · rueda o pellizco para zoom · clic en una pieza para seleccionarla';
+  $('hint').textContent = on ? `Clic en una tapa para poner un ventilador de ${fanSize} mm · clic sobre uno para quitarlo · Esc para terminar` : HINT;
   ghostGroup.clear(); renderer.domElement.style.cursor = on ? 'crosshair' : '';
   if (on && viewMode !== 'asm') setView('asm');
   if (on) select(null);
 }
-function renderFans() {
-  const fans = cfg.fans || [];
-  $('fanList').innerHTML = fans.length ? fans.map((f, i) => `<div class="fanrow"><span class="pill cut">${f.s} mm</span><span>${SURF_NAMES[f.surf]} · ${fanWhere(f)}</span><button type="button" class="icon" data-del="${i}" aria-label="Quitar ventilador">✕</button></div>`).join('')
-    : '<div class="free-u">Sin ventiladores extra. Pulsa «Ventilador» en el visor y haz clic donde lo quieras.</div>';
-  $('fanClear').hidden = fans.length < 2;
-}
-function fanWhere(f) {
-  const g = current.g || derive(cfg);
-  if (f.surf === 'top' || f.surf === 'bottom') return `x ${fmt(f.a)} · y ${fmt(f.b)} mm`;
-  const u = Math.floor((f.b - g.Z0) / U) + 1;
-  return `U${Math.max(1, Math.min(g.NU, u))} · ${f.surf === 'front' || f.surf === 'rear' ? 'x ' + fmt(f.a) : 'fondo ' + fmt(f.a)} mm`;
-}
 $('fanBtn').addEventListener('click', () => setFanMode(!fanMode));
 $('fanSize').addEventListener('change', e => { fanSize = +e.target.value; if (fanMode) setFanMode(true); });
-$('fanList').addEventListener('click', e => { const b = e.target.closest('button[data-del]'); if (!b) return; cfg.fans.splice(+b.dataset.del, 1); changed(); });
-$('fanClear').addEventListener('click', () => { cfg.fans = []; changed(); });
 window.addEventListener('keydown', e => { if (e.key === 'Escape' && fanMode) setFanMode(false); });
 function resize() {
   const w = viewer.clientWidth, h = viewer.clientHeight;
@@ -1515,6 +1794,142 @@ function resize() {
 }
 new ResizeObserver(resize).observe(viewer);
 renderer.setAnimationLoop(() => { controls.update(); renderer.render(scene, camera); });
+
+// ------------------------------------------------------------------ editor 2D de tapas
+let ed = null;   // { pid, sel }
+const FIELDS = {
+  fan: [['s', 'Tamaño', 'fan']], circle: [['d', 'Diámetro']], rect: [['w', 'Ancho'], ['h', 'Alto'], ['r', 'Radio esquina']],
+  slot: [['w', 'Largo'], ['h', 'Ancho']], slots: [['w', 'Ancho zona'], ['h', 'Alto zona'], ['sw', 'Ancho ranura'], ['pitch', 'Paso'], ['dir', 'Dirección', 'dir']],
+  hex: [['w', 'Ancho zona'], ['h', 'Alto zona'], ['cell', 'Hexágono'], ['web', 'Nervio']],
+  holes: [['w', 'Ancho zona'], ['h', 'Alto zona'], ['d', 'Diámetro'], ['pitch', 'Paso']], keystone: [['n', 'Cantidad', 'int']],
+};
+function edPanel() { return ed && cfg.panels.find(p => p.id === ed.pid); }
+function openEditor(pid) {
+  if (fanMode) setFanMode(false);
+  ed = { pid, sel: -1 };
+  $('editor').hidden = false; document.body.classList.add('modal');
+  renderEditor();
+  $('edDone').focus();
+}
+function closeEditor() { ed = null; $('editor').hidden = true; document.body.classList.remove('modal'); }
+function edChanged() { const p = edPanel(); p.auto = false; save(); renderEditor(); renderControls(); clearTimeout(debounce); debounce = setTimeout(regenerate, 500); }
+function renderEditor() {
+  const p = edPanel(); if (!p) { closeEditor(); return; }
+  const g = derive(cfg), { Lw, Lh } = panelDims(p, g), sa = safeArea(p, g);
+  $('edTitle').textContent = panelLabel(p);
+  $('edSize').textContent = `${fmt(Lw, 1)} × ${fmt(Lh, 1)} mm · vista desde fuera`;
+  const tsel = $('edTpl');
+  tsel.innerHTML = '<option value="">Elegir plantilla…</option>' + Object.entries(TEMPLATES).filter(([k]) => k !== 'patch' || p.side === 'front' || p.side === 'rear').map(([k, n]) => `<option value="${k}">${n}</option>`).join('');
+  const Y = (y) => Lh - y;
+  let ctx = `<rect x="0" y="0" width="${Lw}" height="${Lh}" class="pf"/>`;
+  if (p.side === 'front' || p.side === 'rear') {
+    ctx += `<rect x="0" y="0" width="${g.FL_W}" height="${Lh}" class="zone"/><rect x="${Lw - g.FL_W}" y="0" width="${g.FL_W}" height="${Lh}" class="zone"/>`;
+    for (let u = 0; u < p.nu; u++) for (const hz of g.HOLE_Z) for (const x of [g.HOLE_X, Lw - g.HOLE_X]) ctx += `<rect x="${x - 4.8}" y="${Y(u * U + hz) - 3.3}" width="9.6" height="6.6" rx="3.3" class="hole"/>`;
+    for (const s of cfg.shelves) if (s.u >= p.u0 && s.u < p.u0 + p.nu) for (const x of (g.is19 ? [60, g.W / 2, g.W - 60] : [60, g.W - 60])) ctx += `<circle cx="${x}" cy="${Y((s.u - p.u0) * U + g.TRAY_Z + 8)}" r="1.7" class="hole"/>`;
+  } else if (p.side === 'left' || p.side === 'right') {
+    const z = g.RS + g.RT;
+    ctx += `<rect x="0" y="0" width="${z}" height="${Lh}" class="zone"/><rect x="${Lw - z}" y="0" width="${z}" height="${Lh}" class="zone"/>`;
+    for (let k = 0; k < p.nu; k++) if (k % 2 === 0 || k === p.nu - 1) for (const a of [g.BOLT_Y, Lw - g.BOLT_Y]) ctx += `<circle cx="${a}" cy="${Y((k + 0.5) * U)}" r="2.2" class="hole"/>`;
+  } else {
+    const m = g.RT + g.WALL;
+    ctx += `<rect x="0" y="0" width="${m}" height="${Lh}" class="zone"/><rect x="${Lw - m}" y="0" width="${m}" height="${Lh}" class="zone"/>`;
+    for (const x of [g.CB_X0 + g.CB[0] / 2, Lw - g.CB_X0 - g.CB[0] / 2]) for (const y of [g.CB_Y0 + 19, Lh - g.CB_Y0 - 19]) ctx += `<circle cx="${x}" cy="${Y(y)}" r="2.25" class="hole"/>`;
+    ctx += `<text x="${Lw / 2}" y="${Lh + 14}" class="lbl">frente</text>`;
+  }
+  ctx += `<rect x="${sa.a0}" y="${Y(sa.b1)}" width="${sa.a1 - sa.a0}" height="${sa.b1 - sa.b0}" class="safe"/>`;
+  let shapes = '';
+  p.shapes.forEach((s, i) => {
+    const [w, h] = shapeSize(s);
+    let inner = ''; for (const q of prims(s)) inner += primSvg(q, Lh);
+    shapes += `<g class="shp${i === ed.sel ? ' on' : ''}" data-i="${i}">${inner}<rect class="hit" x="${s.x - w / 2 - 1}" y="${Y(s.y + h / 2) - 1}" width="${w + 2}" height="${h + 2}"/></g>`;
+  });
+  const pad = 18;
+  $('edSvg').setAttribute('viewBox', `${-pad} ${-pad} ${Lw + 2 * pad} ${Lh + 2 * pad + (p.side === 'top' ? 6 : 0)}`);
+  $('edSvg').innerHTML = `<g class="ctx">${ctx}</g><g class="pc">${shapes}</g>`;
+  // propiedades
+  const s = p.shapes[ed.sel];
+  let ph = '';
+  if (s) {
+    ph += `<div class="edhead">${SHAPE_TYPES[s.t]}</div>`;
+    const field = ([k, label, kind]) => {
+      if (kind === 'fan') return `<label>${label}<select data-k="${k}">${Object.keys(FAN_SIZES).map(z => `<option value="${z}"${+z === s.s ? ' selected' : ''}>${z} mm</option>`).join('')}</select></label>`;
+      if (kind === 'dir') return `<label>${label}<select data-k="${k}"><option value="h"${s.dir !== 'v' ? ' selected' : ''}>Horizontales</option><option value="v"${s.dir === 'v' ? ' selected' : ''}>Verticales</option></select></label>`;
+      return `<label>${label}<input type="number" data-k="${k}" step="${kind === 'int' ? 1 : 0.5}" min="${kind === 'int' ? 1 : 0}" value="${s[k]}"></label>`;
+    };
+    ph += [['x', 'Centro a'], ['y', 'Centro b']].map(f => field(f)).join('') + FIELDS[s.t].map(field).join('');
+    ph += `<div class="edbtns"><button type="button" class="btn" data-ed="dup">Duplicar</button><button type="button" class="btn" data-ed="del">Borrar</button></div>`;
+  } else {
+    ph = `<div class="edhead">Diseño</div><p class="sub">${p.shapes.length ? `${p.shapes.length} forma${p.shapes.length > 1 ? 's' : ''}. ` : 'Tapa lisa. '}Añade formas arriba o elige una plantilla. Arrastra para mover, haz clic para editar medidas.</p><p class="sub">La línea discontinua marca la zona útil: lo que salga de ella se recorta para no tocar orejas, raíles ni tornillos.</p>`;
+  }
+  $('edProps').innerHTML = ph;
+}
+$('edAdd').addEventListener('click', e => {
+  const b = e.target.closest('button[data-t]'); if (!b) return;
+  const p = edPanel(), s = defaultShape(b.dataset.t, p, derive(cfg));
+  p.shapes.push(s); ed.sel = p.shapes.length - 1; edChanged();
+});
+$('edTpl').addEventListener('change', e => {
+  const v = e.target.value; if (!v) return;
+  const p = edPanel(); p.tpl = v; p.shapes = templateShapes(v, p, derive(cfg)); ed.sel = -1;
+  edChanged(); p.auto = true; save(); renderControls();
+});
+$('edClear').addEventListener('click', () => { const p = edPanel(); p.shapes = []; ed.sel = -1; edChanged(); });
+$('edDone').addEventListener('click', () => { closeEditor(); changed(); });
+$('editor').addEventListener('click', e => { if (e.target === $('editor')) { closeEditor(); changed(); } });
+$('edProps').addEventListener('change', e => {
+  const el = e.target, k = el.dataset.k; if (!k) return;
+  const p = edPanel(), s = p.shapes[ed.sel]; if (!s) return;
+  if (k === 'dir') s.dir = el.value;
+  else { let v = +el.value; if (isNaN(v)) return; if (k === 'n') v = clamp(Math.round(v), 1, 24); if (k === 's') { const f = fitFan(p, derive(cfg), v, s.x, s.y); if (!f) { toast(`Un ventilador de ${v} mm no cabe en esta tapa.`); renderEditor(); return; } Object.assign(s, f); } else s[k] = Math.max(k === 'x' || k === 'y' || k === 'r' ? -1e4 : 1, v); }
+  edChanged();
+});
+$('edProps').addEventListener('click', e => {
+  const b = e.target.closest('button[data-ed]'); if (!b) return;
+  const p = edPanel(), s = p.shapes[ed.sel]; if (!s) return;
+  if (b.dataset.ed === 'del') { p.shapes.splice(ed.sel, 1); ed.sel = -1; }
+  if (b.dataset.ed === 'dup') { const c = { ...s, x: s.x + 10, y: s.y }; p.shapes.push(c); ed.sel = p.shapes.length - 1; }
+  edChanged();
+});
+let drag = null;
+function svgPoint(e) {
+  const svg = $('edSvg'), pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY;
+  return pt.matrixTransform(svg.getScreenCTM().inverse());
+}
+$('edSvg').addEventListener('pointerdown', e => {
+  const gEl = e.target.closest('g.shp');
+  if (!gEl) { if (ed.sel !== -1) { ed.sel = -1; renderEditor(); } return; }
+  const i = +gEl.dataset.i, p = edPanel(), s = p.shapes[i];
+  ed.sel = i; renderEditor();
+  const el = $('edSvg').querySelector(`g.shp[data-i="${i}"]`);
+  drag = { i, start: svgPoint(e), x0: s.x, y0: s.y, el, moved: false };
+  $('edSvg').setPointerCapture(e.pointerId);
+});
+$('edSvg').addEventListener('pointermove', e => {
+  if (!drag) return;
+  const q = svgPoint(e), dx = q.x - drag.start.x, dy = q.y - drag.start.y;
+  if (Math.hypot(dx, dy) > 0.5) drag.moved = true;
+  drag.el.setAttribute('transform', `translate(${Math.round(dx * 2) / 2} ${Math.round(dy * 2) / 2})`);
+  drag.dx = Math.round(dx * 2) / 2; drag.dy = Math.round(dy * 2) / 2;
+});
+$('edSvg').addEventListener('pointerup', () => {
+  if (!drag) return;
+  const d = drag; drag = null;
+  if (!d.moved) return;
+  const p = edPanel(), s = p.shapes[d.i];
+  s.x = d.x0 + (d.dx || 0); s.y = d.y0 - (d.dy || 0);
+  if (s.t === 'fan') { const f = fitFan(p, derive(cfg), s.s, s.x, s.y); if (f) Object.assign(s, f); }
+  edChanged();
+});
+window.addEventListener('keydown', e => {
+  if (!ed) return;
+  if (e.key === 'Escape') { closeEditor(); changed(); return; }
+  if (/INPUT|SELECT|TEXTAREA/.test(document.activeElement?.tagName)) return;
+  const p = edPanel(), s = p && p.shapes[ed.sel]; if (!s) return;
+  const st = e.shiftKey ? 10 : 1;
+  const mv = { ArrowLeft: [-st, 0], ArrowRight: [st, 0], ArrowUp: [0, st], ArrowDown: [0, -st] }[e.key];
+  if (mv) { s.x += mv[0]; s.y += mv[1]; e.preventDefault(); edChanged(); }
+  if (e.key === 'Delete' || e.key === 'Backspace') { p.shapes.splice(ed.sel, 1); ed.sel = -1; e.preventDefault(); edChanged(); }
+});
 
 // ------------------------------------------------------------------ descargas
 function fileBase(p, pc) { return `${pc.id}__x${p.inst.length}`; }
@@ -1531,19 +1946,25 @@ async function offer(filename, blob) {
 }
 function readme() {
   const g = current.g, lines = [];
-  lines.push('CONFIGURADOR RACK HOME LAB', '='.repeat(40), '');
+  lines.push('PRINTMYHOMELAB · RACK', '='.repeat(40), '');
   lines.push(`Rack ${cfg.std}" · ${g.NU}U · ancho ${fmt(g.W, 1)} mm · fondo ${g.D} mm · alto total ≈ ${fmt(g.H + 12)} mm`);
+  lines.push(`Raíles: ${cfg.rails === 'metal' ? `metálicos comprados, 4 × ${g.NU}U (${fmt(g.NU * U, 1)} mm)` : 'impresos en L (ver piezas «Raíl»)'}`);
   lines.push(`Cama de impresión: ${cfg.bed.join(' × ')} mm (zona útil ${effBed().join(' × ')} mm, margen ${cfg.bedMargin ?? 0} mm)`, '');
-  lines.push('MÓDULOS (de abajo arriba)');
-  for (const { m, u0 } of moduleLayout(cfg)) lines.push(`  U${u0}${m.u > 1 ? '-' + (u0 + m.u - 1) : ''}  ${MODULE_TYPES[m.type].name}${m.label && m.dev ? ' · ' + m.label + ' ' + m.dev.join('×') + ' mm' : ''}`);
+  lines.push('TAPAS');
+  for (const side of SIDE_ORDER) for (const p of cfg.panels.filter(x => x.side === side).sort((a, b) => a.u0 - b.u0))
+    lines.push(`  ${panelLabel(p)} · ${p.auto ? TEMPLATES[p.tpl] : 'diseño propio'} · ${p.shapes.length} formas`);
+  lines.push('', 'BALDAS (de abajo arriba)');
+  for (const s of [...cfg.shelves].sort((a, b) => a.u - b.u)) lines.push(`  U${s.u}  ${SHELF_TYPES[s.type].name}${s.dev ? ' · ' + (s.label || '') + ' ' + s.dev.join('×') + ' mm' : ''}`);
   lines.push('', 'PIEZAS (el nombre de archivo termina en __xN = imprimir N copias)');
   for (const row of pieceRows()) if (row.pc) lines.push(`  ${row.p.inst.length} × ${row.pc.id}.stl  (${row.pc.size.map(v => fmt(v)).join(' × ')} mm)${row.pc.fits ? '' : '  ¡NO CABE EN LA CAMA!'}`);
   lines.push('', 'TORNILLERÍA');
   for (const [t, n] of hardware(cfg, g, current.parts)) lines.push(`  ${n} × ${t}`);
+  if (cfg.rails === 'metal') { lines.push('', 'DÓNDE COMPRAR RAÍLES'); for (const s of RAIL_SHOPS) lines.push(`  ${s.name}: ${s.url}`); }
   lines.push('', 'NOTAS',
-    '  - Los STL ya vienen orientados para imprimir (cara plana abajo).',
+    '  - Los STL ya vienen orientados para imprimir (cara exterior abajo en las tapas).',
     '  - Las piezas partidas encajan con colas de milano: limpia, prueba en seco y pega con CA o epoxi.',
     '  - PETG o ASA si el rack va a estar caliente; PLA vale para un armario ventilado.',
+    '  - Las bandejas se atornillan con M3 a la tapa frontal y a la trasera de su U.',
     '  - Medidas de equipos aproximadas: mide router, mini PC y agujeros de la placa antes de imprimir.');
   return lines.join('\n');
 }
@@ -1565,7 +1986,7 @@ async function downloadSelected() {
   const pc = p && current.results.get(p.id)?.pieces[selected.pieceIdx];
   if (!pc) return;
   const stl = stlBinary(printMesh(pc.mesh, p.print, cfg.bed), pc.id);
-  if (window.claude?.use) {   // dentro de claude.ai solo se permite .zip
+  if (window.claude?.use) {
     const zip = new JSZip(); zip.file(fileBase(p, pc) + '.stl', stl);
     await offer(fileBase(p, pc) + '.zip', await zip.generateAsync({ type: 'blob', compression: 'DEFLATE' }));
   } else await offer(fileBase(p, pc) + '.stl', new Blob([stl], { type: 'model/stl' }));
@@ -1581,6 +2002,7 @@ function setFold(folded) {
 }
 $('fold').addEventListener('click', () => setFold($('fold').getAttribute('aria-expanded') === 'true'));
 try { if (localStorage.getItem('rack-parts-folded') === '1') setFold(true); } catch (e) {}
+$('hint').textContent = HINT;
 initControls();
 renderControls();
 applyTheme();
@@ -1588,7 +2010,7 @@ resize();
 current = { ...buildPartList({ ...cfg, bed: effBed() }), results: new Map() };
 rebuildScene(); renderParts();
 initKernel().then(k => { K = k; regenerate(); }).catch(e => {
-  console.error(e); setStatus('No se pudo cargar el motor 3D', 0);
+  console.error(e);
   $('sum').innerHTML = '<span class="err">No se pudo cargar el motor de geometría. Recarga la página o ábrela en Chrome, Edge o Firefox.</span>';
 });
 

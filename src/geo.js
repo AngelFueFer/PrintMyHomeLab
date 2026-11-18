@@ -1,44 +1,94 @@
 // ===================================================================
-//  Geometría paramétrica del mini-rack (port del rack10_homelab.scad)
+//  Geometría paramétrica del mini-rack v2
+//  Raíles de esquina + tapas independientes (diseño 2D) + baldas libres
 //  Ejes: X ancho (0 = lateral izq.), Y fondo (0 = frente), Z alto. mm.
 // ===================================================================
 export const U = 44.45;
 
-export const MODULE_TYPES = {
-  storage: { name: 'Almacenamiento + ventilador 80 mm', short: 'Almacenamiento', minU: 3, fixedU: false, tray: true },
-  compute: { name: 'Placa base vertical + fuente SFX', short: 'Cómputo', minU: 6, fixedU: false, tray: true },
-  mini:    { name: 'Mini PC en bandeja', short: 'Mini PC', minU: 1, fixedU: false, tray: true },
-  router:  { name: 'Router / switch en bandeja', short: 'Router', minU: 1, fixedU: false, tray: true },
-  shelf:   { name: 'Bandeja genérica', short: 'Bandeja', minU: 1, fixedU: false, tray: true },
-  patch:   { name: 'Patch panel keystone', short: 'Patch panel', minU: 1, fixedU: true, tray: false },
-  blank:   { name: 'Tapa ventilada', short: 'Tapa', minU: 1, fixedU: false, tray: false },
+export const SIDES = { front: 'Frontal', rear: 'Trasera', left: 'Lateral izquierdo', right: 'Lateral derecho', top: 'Tapa superior' };
+export const SIDE_SHORT = { front: 'Frontal', rear: 'Trasera', left: 'Lat. izq.', right: 'Lat. der.', top: 'Superior' };
+
+export const TEMPLATES = {
+  lisa: 'Lisa',
+  ranuras: 'Ranuras',
+  panal: 'Panal hexagonal',
+  agujeros: 'Rejilla de agujeros',
+  ventilador: 'Ventilador centrado',
+  vent_ranuras: 'Ventilador + ranuras',
+  ventana: 'Ventana / paso de cables',
+  patch: 'Patch panel (keystone)',
 };
 
-export function defaultModule(type) {
-  switch (type) {
-    case 'storage': return { type, u: 3, hdd: 3, ssd: 2 };
-    case 'compute': return { type, u: 6, ssd: 6, button: true };
-    case 'mini':    return { type, u: 2, dev: [177, 175, 34], label: 'Mini PC' };
-    case 'router':  return { type, u: 2, dev: [220, 160, 40], label: 'Router' };
-    case 'shelf':   return { type, u: 2, dev: [150, 150, 40], label: 'Equipo' };
-    case 'patch':   return { type, u: 1, keystones: 8 };
-    case 'blank':   return { type, u: 1 };
-  }
+export const SHAPE_TYPES = {
+  fan: 'Ventilador', circle: 'Agujero redondo', rect: 'Rectángulo', slot: 'Ranura',
+  slots: 'Zona de ranuras', hex: 'Zona de panal', holes: 'Rejilla de agujeros', keystone: 'Keystones',
+};
+
+export const SHELF_TYPES = {
+  bandeja: { name: 'Bandeja genérica', short: 'Bandeja' },
+  mini: { name: 'Mini PC con topes', short: 'Mini PC' },
+  router: { name: 'Router / switch', short: 'Router' },
+  discos: { name: 'Discos 3,5″ y 2,5″', short: 'Discos' },
+  placa: { name: 'Placa base vertical + fuente SFX', short: 'Placa base' },
+};
+
+export const FAN_SIZES = { 40: 32, 60: 50, 80: 71.5, 92: 82.5, 120: 105, 140: 124.5 };
+
+let _n = 0;
+export const uid = () => Math.random().toString(36).slice(2, 6) + (_n++).toString(36);
+const r05 = (v) => Math.round(v * 2) / 2;
+
+export function defaultShelf(type, u) {
+  const s = { id: uid(), u, type };
+  if (type === 'bandeja') Object.assign(s, { dev: [150, 150, 40], label: 'Equipo' });
+  if (type === 'mini') Object.assign(s, { dev: [177, 175, 34], label: 'Mini PC' });
+  if (type === 'router') Object.assign(s, { dev: [220, 160, 40], label: 'Router' });
+  if (type === 'discos') Object.assign(s, { hdd: 3, ssd: 2 });
+  if (type === 'placa') Object.assign(s, { ssd: 4 });
+  return s;
 }
 
 export function defaultConfig() {
-  return {
-    std: '10', depth: 250, extraU: 0, wall: 3, faceT: 4,
+  const cfg = {
+    v: 2, std: '10', depth: 250, NU: 14, wall: 3, faceT: 4, rails: 'metal',
     bed: [250, 220, 256], bedPreset: 'mine', bedMargin: 2,
-    showDevices: true, showRails: true, fans: [],
-    modules: [ // de abajo arriba
-      defaultModule('storage'), defaultModule('compute'),
-      { ...defaultModule('mini'), label: 'HP EliteDesk 800 Mini' },
-      { ...defaultModule('router'), label: 'Router Digi' },
-      defaultModule('patch'),
+    showDevices: true, showRails: true,
+    shelves: [
+      defaultShelf('discos', 1), defaultShelf('placa', 4),
+      { ...defaultShelf('mini', 10), label: 'HP EliteDesk 800 Mini' },
+      { ...defaultShelf('router', 12), label: 'Router Digi' },
     ],
+    panels: [],
   };
+  cfg.panels = defaultPanels(cfg);
+  return cfg;
 }
+
+export function makePanel(cfg, side, u0, nu, tpl) {
+  const p = { id: uid(), side, u0, nu, tpl, auto: true, shapes: [] };
+  p.shapes = templateShapes(tpl, p, derive(cfg));
+  return p;
+}
+
+export function defaultPanels(cfg) {
+  const g = derive(cfg);
+  const P = [];
+  const ranges = g.NU === 14
+    ? [[1, 3, 'vent_ranuras'], [4, 3, 'ranuras'], [7, 3, 'ranuras'], [10, 2, 'ventana'], [12, 2, 'ventana'], [14, 1, 'patch']]
+    : chunks(g.NU, 3).map(([u0, n]) => [u0, n, 'ranuras']);
+  for (const [u0, n, t] of ranges) P.push(makePanel(cfg, 'front', u0, n, t));
+  for (const [u0, n] of ranges) P.push(makePanel(cfg, 'rear', u0, n, 'ventana'));
+  const ecfg = { ...cfg, bed: [cfg.bed[0] - 2 * (cfg.bedMargin || 0), cfg.bed[1] - 2 * (cfg.bedMargin || 0), cfg.bed[2]] };
+  let u = 1;
+  for (const n of wallSegments(ecfg, g)) {
+    P.push(makePanel(cfg, 'left', u, n, 'ranuras'));
+    P.push(makePanel(cfg, 'right', u, n, 'ranuras'));
+    u += n;
+  }
+  P.push(makePanel(cfg, 'top', 1, 1, 'ranuras'));
+  return P;
+}
+function chunks(N, k) { const out = []; let u = 1; while (u <= N) { const n = Math.min(k, N - u + 1); out.push([u, n]); u += n; } return out; }
 
 export function derive(cfg) {
   const is19 = cfg.std === '19';
@@ -46,15 +96,16 @@ export function derive(cfg) {
   const OPEN = is19 ? 450.85 : 222.25;
   const HOLE_X = (W - (is19 ? 465.1 : 236.525)) / 2;
   const D = cfg.depth;
-  const NU = cfg.modules.reduce((s, m) => s + m.u, 0) + (cfg.extraU || 0);
-  const RF = 15.8, RS = 20, RT = 2, SQ = 9.5, WALL = cfg.wall || 3, PLATE_T = 8, POCKET = 3, TOL = 0.3;
+  const NU = Math.max(1, Math.round(cfg.NU || 1));
+  const printed = cfg.rails === 'print';
+  const RF = 15.8, RS = 20, RT = printed ? 5 : 2, SQ = 9.5, WALL = cfg.wall || 3, PLATE_T = 8, POCKET = 3, TOL = 0.3;
   const FL_W = (W - OPEN) / 2;
   const CB_X0 = RT + WALL + 0.3, CB_Y0 = 9;
   const CB = [RF - CB_X0, 26, 30];
   const Z0 = PLATE_T - POCKET;
-  return { is19, W, OPEN, HOLE_X, D, NU, RF, RS, RT, SQ, WALL, PLATE_T, POCKET, TOL, FL_W, CB_X0, CB_Y0, CB, Z0,
+  return { is19, W, OPEN, HOLE_X, D, NU, RF, RS, RT, SQ, WALL, PLATE_T, POCKET, TOL, FL_W, CB_X0, CB_Y0, CB, Z0, printed,
     BOLT_Y: 15, M6_D: 6.6, HOLE_Z: [6.35, 22.225, 38.1], FT: cfg.faceT || 4, TRAY_Z: 4,
-    uz: (u) => Z0 + (u - 1) * U, H: Z0 + NU * U - POCKET + PLATE_T };
+    uz: (u) => Z0 + (u - 1) * U, H: Z0 + NU * U - POCKET + PLATE_T, TOPZ: Z0 + NU * U - POCKET };
 }
 
 const MB = [244, 244];
@@ -62,6 +113,186 @@ const MB_HOLES = [[35,10],[79,10],[236.5,27],[12,165],[79,165],[236.5,165],[79,2
 const SFX = [125, 100, 63.5];
 const HDD_MOD = [112, 165, 34], SSD_MOD = [80, 110, 15];
 const STANDOFF = 8, MB_Z0 = 10;
+
+// ------------------------------------------------------------------
+//  Tapas: medidas, zona útil y plantillas (coordenadas 2D a,b vistas desde fuera)
+// ------------------------------------------------------------------
+export function panelDims(p, g) {
+  if (p.side === 'front' || p.side === 'rear') return { Lw: g.W, Lh: p.nu * U - 0.8 };
+  if (p.side === 'left' || p.side === 'right') return { Lw: g.D, Lh: p.nu * U };
+  return { Lw: g.W, Lh: g.D };
+}
+export function safeArea(p, g) {
+  const { Lw, Lh } = panelDims(p, g);
+  if (p.side === 'front' || p.side === 'rear') return { a0: g.FL_W + 4, a1: Lw - g.FL_W - 4, b0: 5, b1: Lh - 5 };
+  if (p.side === 'left' || p.side === 'right') return { a0: g.RS + g.RT + 6, a1: Lw - g.RS - g.RT - 6, b0: 8, b1: Lh - 8 };
+  const m = g.RT + g.WALL + 20;
+  return { a0: m, a1: Lw - m, b0: 45, b1: Lh - 45 };
+}
+
+export function templateShapes(tpl, p, g) {
+  const { a0, a1, b0, b1 } = safeArea(p, g);
+  const w = a1 - a0, h = b1 - b0, cx = r05((a0 + a1) / 2), cy = r05((b0 + b1) / 2);
+  if (w < 12 || h < 8) return [];
+  const fitFan = (maxd) => [140, 120, 92, 80, 60, 40].find(s => s + 2 <= maxd);
+  switch (tpl) {
+    case 'ranuras': return [{ t: 'slots', x: cx, y: cy, w: r05(w - 8), h: r05(h - 2), sw: 6, pitch: 13, dir: 'h' }];
+    case 'panal': return [{ t: 'hex', x: cx, y: cy, w: r05(w - 4), h: r05(h - 2), cell: 10, web: 2.4 }];
+    case 'agujeros': return [{ t: 'holes', x: cx, y: cy, w: r05(w - 4), h: r05(h - 2), d: 5, pitch: 8 }];
+    case 'ventilador': { const s = fitFan(Math.min(w, h)); return s ? [{ t: 'fan', x: cx, y: cy, s }] : []; }
+    case 'vent_ranuras': {
+      const s = fitFan(Math.min(w * 0.55, h));
+      if (!s) return templateShapes('ranuras', p, g);
+      const fx = r05(a1 - s / 2 - 6);
+      const out = [{ t: 'fan', x: fx, y: cy, s }];
+      const sw = fx - s / 2 - 10 - a0;
+      if (sw > 20) out.push({ t: 'slots', x: r05(a0 + 2 + sw / 2), y: cy, w: r05(sw), h: r05(h - 2), sw: 6, pitch: 13, dir: 'h' });
+      return out;
+    }
+    case 'ventana': return [{ t: 'rect', x: cx, y: cy, w: r05(w - 10), h: r05(Math.max(6, h - 6)), r: 4 }];
+    case 'patch': { const n = Math.max(1, Math.min(8, Math.floor((w - 10) / 25))); return h >= 18 ? [{ t: 'keystone', x: cx, y: cy, n }] : []; }
+    default: return [];
+  }
+}
+
+// Primitivas 2D de una forma (se usan para dibujar el SVG y para el CSG)
+//  {k:'c',x,y,d} círculo · {k:'r',x,y,w,h,r} rectángulo redondeado centrado · {k:'p',pts} polígono · {k:'f',x,y,s} ventilador
+export function prims(s) {
+  switch (s.t) {
+    case 'circle': return [{ k: 'c', x: s.x, y: s.y, d: s.d }];
+    case 'rect': return [{ k: 'r', x: s.x, y: s.y, w: s.w, h: s.h, r: Math.max(0, Math.min(s.r || 0, s.w / 2, s.h / 2)) }];
+    case 'slot': return [{ k: 'r', x: s.x, y: s.y, w: s.w, h: s.h, r: Math.min(s.w, s.h) / 2 }];
+    case 'slots': {
+      const out = [], vert = s.dir === 'v', L = vert ? s.w : s.h, pitch = Math.max(s.sw + 1.2, s.pitch);
+      const n = Math.max(0, Math.floor((L - s.sw) / pitch) + 1), off = (n - 1) * pitch / 2;
+      for (let i = 0; i < n; i++) {
+        const o = -off + i * pitch;
+        out.push(vert ? { k: 'r', x: s.x + o, y: s.y, w: s.sw, h: s.h, r: s.sw / 2 } : { k: 'r', x: s.x, y: s.y + o, w: s.w, h: s.sw, r: s.sw / 2 });
+      }
+      return out;
+    }
+    case 'holes': {
+      const out = [], pitch = Math.max(s.d + 1.2, s.pitch);
+      const nx = Math.max(0, Math.floor((s.w - s.d) / pitch) + 1), ny = Math.max(0, Math.floor((s.h - s.d) / pitch) + 1);
+      for (let i = 0; i < nx; i++) for (let j = 0; j < ny; j++)
+        out.push({ k: 'c', x: s.x + (i - (nx - 1) / 2) * pitch, y: s.y + (j - (ny - 1) / 2) * pitch, d: s.d });
+      return out;
+    }
+    case 'hex': {
+      const out = [], cell = Math.max(3, s.cell), R = cell / Math.sqrt(3), p = cell + Math.max(1, s.web), dy = p * Math.sqrt(3) / 2;
+      const nj = Math.ceil(s.h / dy) + 1, ni = Math.ceil(s.w / p) + 1;
+      for (let j = -nj; j <= nj; j++) {
+        const y = s.y + j * dy, off = (Math.abs(j) % 2) ? p / 2 : 0;
+        if (Math.abs(y - s.y) + R > s.h / 2) continue;
+        for (let i = -ni; i <= ni; i++) {
+          const x = s.x + i * p + off;
+          if (Math.abs(x - s.x) + cell / 2 > s.w / 2) continue;
+          const pts = []; for (let k = 0; k < 6; k++) { const a = Math.PI / 2 + k * Math.PI / 3; pts.push([x + R * Math.cos(a), y + R * Math.sin(a)]); }
+          out.push({ k: 'p', pts });
+        }
+      }
+      return out;
+    }
+    case 'fan': return [{ k: 'f', x: s.x, y: s.y, s: s.s }];
+    case 'keystone': {
+      const out = []; for (let i = 0; i < s.n; i++) out.push({ k: 'r', x: s.x + (i - (s.n - 1) / 2) * 25, y: s.y, w: 14.9, h: 16.5, r: 0 });
+      return out;
+    }
+  }
+  return [];
+}
+export function shapeSize(s) {
+  if (s.t === 'fan') return [s.s, s.s];
+  if (s.t === 'circle') return [s.d, s.d];
+  if (s.t === 'keystone') return [(s.n - 1) * 25 + 14.9, 16.5];
+  return [s.w, s.h];
+}
+export function defaultShape(t, p, g) {
+  const sa = safeArea(p, g), cx = r05((sa.a0 + sa.a1) / 2), cy = r05((sa.b0 + sa.b1) / 2);
+  const w = sa.a1 - sa.a0, h = sa.b1 - sa.b0, mw = Math.min(w, 120), mh = Math.min(h, 80);
+  switch (t) {
+    case 'fan': { const s = [120, 92, 80, 60, 40].find(z => z + 2 <= Math.min(w, h)) || 40; return { t, x: cx, y: cy, s }; }
+    case 'circle': return { t, x: cx, y: cy, d: Math.min(20, h - 2) };
+    case 'rect': return { t, x: cx, y: cy, w: r05(mw * 0.6), h: r05(mh * 0.6), r: 3 };
+    case 'slot': return { t, x: cx, y: cy, w: r05(mw * 0.6), h: 8 };
+    case 'slots': return { t, x: cx, y: cy, w: r05(mw), h: r05(mh), sw: 6, pitch: 13, dir: 'h' };
+    case 'hex': return { t, x: cx, y: cy, w: r05(mw), h: r05(mh), cell: 10, web: 2.4 };
+    case 'holes': return { t, x: cx, y: cy, w: r05(mw), h: r05(mh), d: 5, pitch: 8 };
+    case 'keystone': return { t, x: cx, y: cy, n: Math.max(1, Math.min(4, Math.floor((w - 10) / 25))) };
+  }
+}
+
+// Ajusta el centro de un ventilador a la zona útil; null si no cabe
+export function fitFan(p, g, S, a, b) {
+  const sa = safeArea(p, g), m = S / 2 + 1;
+  if (sa.a1 - sa.a0 < 2 * m || sa.b1 - sa.b0 < 2 * m) return null;
+  return { t: 'fan', s: S, x: r05(Math.min(sa.a1 - m, Math.max(sa.a0 + m, a))), y: r05(Math.min(sa.b1 - m, Math.max(sa.b0 + m, b))) };
+}
+
+// Paso entre coordenadas de tapa (a,b) y de montaje. o = distancia hacia dentro.
+export function panelToWorld(p, a, b, g, o = 0) {
+  const zb = g.uz(p.u0);
+  switch (p.side) {
+    case 'front': return { c: [a, -g.FT + o, zb + b], n: 'y' };
+    case 'rear': return { c: [g.W - a, g.D + g.FT - o, zb + b], n: 'y' };
+    case 'left': return { c: [g.RT + o, g.D - a, zb + b], n: 'x' };
+    case 'right': return { c: [g.W - g.RT - o, a, zb + b], n: 'x' };
+    case 'top': return { c: [a, b, g.TOPZ + g.PLATE_T - o], n: 'z' };
+  }
+}
+export function worldToPanel(p, pt, g) {
+  const zb = g.uz(p.u0);
+  switch (p.side) {
+    case 'front': return [pt.x, pt.z - zb];
+    case 'rear': return [g.W - pt.x, pt.z - zb];
+    case 'left': return [g.D - pt.y, pt.z - zb];
+    case 'right': return [pt.y, pt.z - zb];
+    case 'top': return [pt.x, pt.y];
+  }
+}
+export function fanPoses(cfg, g) {
+  const out = [];
+  for (const p of cfg.panels || []) for (const s of p.shapes) if (s.t === 'fan') out.push({ ...panelToWorld(p, s.x, s.y, g, 12.5 + (p.side === 'top' ? g.PLATE_T : p.side === 'left' || p.side === 'right' ? g.WALL : g.FT)), s: s.s });
+  return out;
+}
+
+// Ajusta tapas y baldas tras cambiar medidas (recorta rangos, regenera plantillas no editadas)
+export function syncConfig(cfg) {
+  const g = derive(cfg);
+  cfg.panels = (cfg.panels || []).filter(p => SIDES[p.side] && (p.side === 'top' || p.u0 <= g.NU));
+  for (const p of cfg.panels) {
+    if (p.side === 'top') { p.u0 = 1; p.nu = 1; }
+    else { p.u0 = Math.max(1, Math.min(g.NU, Math.round(p.u0))); p.nu = Math.max(1, Math.min(g.NU - p.u0 + 1, Math.round(p.nu))); }
+    if (p.auto) p.shapes = templateShapes(p.tpl, p, g);
+  }
+  cfg.shelves = (cfg.shelves || []).filter(s => SHELF_TYPES[s.type]);
+  for (const s of cfg.shelves) s.u = Math.max(1, Math.min(g.NU, Math.round(s.u)));
+  return cfg;
+}
+// Tapas que se pisan en el mismo lado
+export function panelClashes(cfg) {
+  const bad = new Set();
+  const ps = cfg.panels || [];
+  for (let i = 0; i < ps.length; i++) for (let j = i + 1; j < ps.length; j++) {
+    const a = ps[i], b = ps[j];
+    if (a.side !== b.side) continue;
+    if (a.side === 'top' || (a.u0 < b.u0 + b.nu && b.u0 < a.u0 + a.nu)) { bad.add(a.id); bad.add(b.id); }
+  }
+  return bad;
+}
+export function firstFree(cfg, side) {
+  const g = derive(cfg);
+  if (side === 'top') return (cfg.panels || []).some(p => p.side === 'top') ? null : { u0: 1, nu: 1 };
+  const used = new Array(g.NU + 2).fill(false);
+  for (const p of cfg.panels || []) if (p.side === side) for (let u = p.u0; u < p.u0 + p.nu; u++) used[u] = true;
+  for (let u = 1; u <= g.NU; u++) if (!used[u]) { let n = 0; while (u + n <= g.NU && !used[u + n] && n < 3) n++; return { u0: u, nu: n }; }
+  return null;
+}
+export function shelfSpan(s, g) {
+  if (s.type === 'placa') return 6;
+  if (s.type === 'discos') return Math.max(1, Math.ceil(((s.hdd || 0) * HDD_MOD[2] + 14) / U));
+  return Math.max(1, Math.ceil(((s.dev ? s.dev[2] : 30) + g.TRAY_Z + 9) / U));
+}
 
 // ------------------------------------------------------------------
 //  Ayudas sobre el kernel K
@@ -78,34 +309,73 @@ function H(K) {
   return { box, cylZ, cylX, cylY, U: U_, diff, atCorners };
 }
 
+// Sólido de recorte de un diseño en coordenadas de tapa (a→X, b→Y, grosor Z de -30 a 30)
+function designSolid(K, shapes, sa, flipW) {
+  const { cylZ, box } = H(K);
+  const fx = (x) => flipW ? flipW - x : x;
+  const parts = [], fans = [], keep = [];
+  for (const s of shapes || []) for (const q of prims(s)) {
+    if (q.k === 'c') parts.push(cylZ(fx(q.x), q.y, -30, q.d, 60));
+    else if (q.k === 'r') {
+      if (q.r < 0.3) parts.push(box(fx(q.x) - q.w / 2, q.y - q.h / 2, -30, q.w, q.h, 60));
+      else {
+        const dx = Math.max(0, q.w / 2 - q.r), dy = Math.max(0, q.h / 2 - q.r);
+        const pts = dx < 0.01 && dy < 0.01 ? [[0, 0]] : dx < 0.01 ? [[0, -dy], [0, dy]] : dy < 0.01 ? [[-dx, 0], [dx, 0]] : [[-dx, -dy], [dx, -dy], [-dx, dy], [dx, dy]];
+        const cs = pts.map(([ox, oy]) => cylZ(fx(q.x) + ox, q.y + oy, -30, 2 * q.r, 60));
+        parts.push(cs.length === 1 ? cs[0] : K.hull(cs));
+      }
+    } else if (q.k === 'p') parts.push(K.tr(K.prism(q.pts.map(([x, y]) => [fx(x), y]), 60), [0, 0, -30]));
+    else if (q.k === 'f') { fans.push(K.tr(fanCut(K, q.s, 60), [fx(q.x), q.y, -31])); keep.push(box(fx(q.x) - q.s / 2 - 2, q.y - q.s / 2 - 2, -35, q.s + 4, q.s + 4, 70)); }
+  }
+  if (!parts.length && !fans.length) return null;
+  // bajo un ventilador no se recorta nada más: queda su marco macizo para los tornillos
+  let all = parts.length ? K.union(parts) : null;
+  if (all && keep.length) all = K.diff(all, keep);
+  if (fans.length) all = all ? K.union([all, ...fans]) : K.union(fans);
+  return K.inter(all, box(sa.a0, sa.b0, -40, sa.a1 - sa.a0, sa.b1 - sa.b0, 80));
+}
+
+// Rejilla de ventilador en el plano XY, centrada en el origen, z de -1 a th+1
+function fanCut(K, S, th) {
+  const { cylZ, box } = H(K);
+  const hs = FAN_SIZES[S] || S * 0.85;
+  const rings = [];
+  const rMax = S / 2 - 2.5;
+  rings.push(cylZ(0, 0, -1, Math.min(14, S * 0.22), th + 2));
+  for (let r = Math.min(7, S * 0.11) + 3; r + 3 <= rMax; r += 7) rings.push(K.diff(cylZ(0, 0, -1, 2 * (r + 4), th + 2), [cylZ(0, 0, -2, 2 * r, th + 4)]));
+  const spokes = [box(-1.6, -S, -3, 3.2, 2 * S, th + 6), box(-S, -1.6, -3, 2 * S, 3.2, th + 6)];
+  const grill = K.diff(K.union(rings), spokes);
+  const holes = [];
+  for (const sx of [-1, 1]) for (const sy of [-1, 1]) holes.push(cylZ(sx * hs / 2, sy * hs / 2, -1, S <= 40 ? 3.4 : 4.4, th + 2));
+  return K.union([grill, ...holes]);
+}
+
 // ------------------------------------------------------------------
 //  Piezas (en coordenadas de montaje)
 // ------------------------------------------------------------------
-function sideWall(K, g, nu) {
-  const { box, cylX, cylZ, U: un, diff, } = H(K);
+function sideBoltZ(nu) { const z = []; for (let k = 0; k < nu; k++) if (k % 2 === 0 || k === nu - 1) z.push((k + 0.5) * U); return z; }
+
+function sidePanel(K, g, p, flip) {
+  const { box, cylX, cylZ, U: un, diff } = H(K);
   const { RT, WALL, D, BOLT_Y } = g;
-  const h = nu * U;
+  const h = p.nu * U;
   const base = un([box(RT, 4, 0, WALL, D - 8, h), box(RT, 38, 0, 8, D - 76, 6), box(RT, 38, h - 6, 8, D - 76, 6)]);
   const cuts = [];
-  const n = Math.floor((h - 36) / 12);
-  for (let i = 0; i < n; i++) {
-    const z = 18 + i * 12 + 2.5;
-    cuts.push(K.hull([cylX(RT - 2, 63, z, 5, WALL + 4), cylX(RT - 2, D - 63, z, 5, WALL + 4)]));
-  }
-  const zs = [15, h - 15];
-  for (let k = 1; k <= nu - 1; k += 2) zs.push(k * U);
-  for (const y of [BOLT_Y, D - BOLT_Y]) for (const z of zs) cuts.push(cylX(RT - 1, y, z, 4.4, WALL + 2));
+  for (const y of [BOLT_Y, D - BOLT_Y]) for (const z of sideBoltZ(p.nu)) cuts.push(cylX(RT - 1, y, z, 4.4, WALL + 2));
   for (const y of [D / 3, 2 * D / 3]) for (const z of [-1, h - 10]) cuts.push(cylZ(RT + 4, y, z, 6.3, 11));
-  return { solid: diff(base, cuts), m4: 2 * zs.length };
+  const d = designSolid(K, p.shapes, safeArea(p, g), flip ? D : 0);
+  if (d) cuts.push(K.tr(K.rot(d, [90, 0, 90]), [RT + WALL / 2, 0, 0]));
+  return diff(base, cuts);
 }
 
 function cornerBlock(K, g) {
   const { box, cylX, cylZ, diff } = H(K);
   const { CB_X0, CB_Y0, CB, BOLT_Y } = g;
-  return diff(box(CB_X0, CB_Y0, 0, ...CB), [cylX(CB_X0 - 1, BOLT_Y, 15, 5.6, 9), cylZ(CB_X0 + CB[0] / 2, CB_Y0 + 19, -1, 5.6, 9)]);
+  const hz = g.Z0 + U / 2 - g.PLATE_T;   // coincide con el agujero de la primera U de la pared
+  return diff(box(CB_X0, CB_Y0, 0, ...CB), [cylX(CB_X0 - 1, BOLT_Y, hz, 5.6, 9), cylZ(CB_X0 + CB[0] / 2, CB_Y0 + 19, -1, 5.6, 9)]);
 }
 
-function plateFull(K, g, top) {
+function plateFull(K, g, top, design) {
   const { box, cylZ, U: un, diff, atCorners } = H(K);
   const { W, D, RF, RT, RS, WALL, TOL, POCKET, PLATE_T, CB_X0, CB_Y0, CB } = g;
   const zc = top ? -1 : PLATE_T - POCKET;
@@ -115,12 +385,15 @@ function plateFull(K, g, top) {
   const cx = CB_X0 + CB[0] / 2, cy = CB_Y0 + 19;
   cuts.push(atCorners(un([cylZ(cx, cy, -1, 4.5, PLATE_T + 2),
     top ? cylZ(cx, cy, PLATE_T - 1.4, 4.5, 2.5, 9) : cylZ(cx, cy, -0.01, 9, 2.5, 4.5)]), W, D));
-  if (!top) for (const x of [28, W - 28]) for (const y of [40, D - 40]) cuts.push(cylZ(x, y, -1, 5.6, 7));
-  const rows = Math.max(0, Math.floor((D - 85) / 20) + 1);
-  const len = W / 2 - 60;
-  for (const x0 of [35, W / 2 + 25]) for (let i = 0; i < rows; i++)
-    cuts.push(K.hull([cylZ(x0, 35 + i * 20, -1, 8, PLATE_T + 2), cylZ(x0 + len, 35 + i * 20, -1, 8, PLATE_T + 2)]));
-  cuts.push(box(W / 2 - 40, D - 40, -1, 80, 25, PLATE_T + 2));
+  if (!top) {
+    for (const x of [28, W - 28]) for (const y of [40, D - 40]) cuts.push(cylZ(x, y, -1, 5.6, 7));
+    const rows = Math.max(0, Math.floor((D - 85) / 20) + 1);
+    const len = W / 2 - 60;
+    for (const x0 of [35, W / 2 + 25]) for (let i = 0; i < rows; i++)
+      cuts.push(K.hull([cylZ(x0, 35 + i * 20, -1, 8, PLATE_T + 2), cylZ(x0 + len, 35 + i * 20, -1, 8, PLATE_T + 2)]));
+    cuts.push(box(W / 2 - 40, D - 40, -1, 80, 25, PLATE_T + 2));
+  }
+  if (design) cuts.push(K.tr(design, [0, 0, PLATE_T / 2]));
   return diff(box(0, 0, 0, W, D, PLATE_T), cuts);
 }
 
@@ -129,38 +402,22 @@ function foot(K) {
   return diff(cylZ(0, 0, 0, 30, 12, 24), [cylZ(0, 0, -1, 4.5, 20), cylZ(0, 0, -1, 9, 8)]);
 }
 
-// Frontal genérico con orejas (cara delantera en y = -t)
+// Tapa frontal/trasera con orejas (cara exterior en y = -t)
 function facePlate(K, g, nu, opts = {}) {
   const { box, cylY, U: un, diff } = H(K);
-  const { W, OPEN, FL_W, TOL, HOLE_X, HOLE_Z, M6_D, TRAY_Z } = g;
+  const { W, OPEN, FL_W, TOL, HOLE_X, HOLE_Z, M6_D } = g;
   const t = g.FT;
   const h = nu * U - 0.8;
   const body = un([box(0, -t, 0, W, t, h), box(FL_W + TOL, 0, 0, OPEN - 2 * TOL, 6, 4), box(FL_W + TOL, 0, h - 4, OPEN - 2 * TOL, 6, 4)]);
   const cuts = [];
   for (let u = 0; u < nu; u++) for (const hz of HOLE_Z) for (const x of [HOLE_X, W - HOLE_X])
     cuts.push(K.hull([cylY(x - 1.5, -t - 1, u * U + hz, M6_D, t + 2), cylY(x + 1.5, -t - 1, u * U + hz, M6_D, t + 2)]));
-  if (opts.trayHoles) for (const x of trayTabX(g)) cuts.push(cylY(x, -t - 1, TRAY_Z + 8, 3.4, t + 8));
-  if (opts.window) {
-    const [ww, wh] = opts.window;
-    cuts.push(box((W - ww) / 2, -t - 1, (h - wh) / 2, ww, t + 2, wh));
-  }
-  if (opts.extra) cuts.push(...opts.extra(h, t));
-  return { solid: diff(body, cuts), h };
+  for (const z of opts.trayZ || []) for (const x of trayTabX(g)) cuts.push(cylY(x, -t - 1, z, 3.4, t + 8));
+  if (opts.extra) cuts.push(...opts.extra);
+  return diff(body, cuts);
 }
 
-function ventRows(K, g, h, t, x0, len, opts = {}) {
-  const { cylY } = H(K);
-  const pitch = opts.pitch || 14, m = opts.margin || 16, d = opts.d || 6;
-  const out = [];
-  const n = Math.max(0, Math.floor((h - 2 * m) / pitch) + 1);
-  const z0 = (h - (n - 1) * pitch) / 2;
-  for (let i = 0; i < n; i++) out.push(K.hull([cylY(x0, -t - 1, z0 + i * pitch, d, t + 2), cylY(x0 + len, -t - 1, z0 + i * pitch, d, t + 2)]));
-  return out;
-}
-
-function trayTabX(g) {
-  return g.is19 ? [60, g.W / 2, g.W - 60] : [60, g.W - 60];
-}
+function trayTabX(g) { return g.is19 ? [60, g.W / 2, g.W - 60] : [60, g.W - 60]; }
 
 function tray(K, g, lip = 15) {
   const { box, cylY, U: un, diff } = H(K);
@@ -209,6 +466,27 @@ function sfxCradle(K, g) {
   return diff(body, cuts);
 }
 
+// Raíl impreso en L (tramo de nu U). Ala frontal (x) con insertos M5, ala lateral (y) con insertos M4, espigas de 3 mm en los extremos.
+function railSeg(K, g, nu) {
+  const { box, cylX, cylY, cylZ, U: un, diff } = H(K);
+  const { RF, RT, RS, HOLE_X, HOLE_Z, BOLT_Y } = g;
+  const L = nu * U;
+  const cuts = [];
+  for (let u = 0; u < nu; u++) {
+    for (const hz of HOLE_Z) cuts.push(cylY(HOLE_X, -1, u * U + hz, 6.4, RT + 2));
+    cuts.push(cylX(-1, BOLT_Y, (u + 0.5) * U, 5.6, RT + 2));
+  }
+  for (const z of [-1, L - 7]) { cuts.push(cylZ(RF - 2.3, RT / 2, z, 3.2, 8)); cuts.push(cylZ(RT / 2, RS - 4, z, 3.2, 8)); }
+  return diff(un([box(0, 0, 0, RF, RT, L), box(0, 0, 0, RT, RS, L)]), cuts);
+}
+export function railSegments(cfg, g) {
+  const maxU = Math.max(1, Math.floor((Math.max(cfg.bed[0], cfg.bed[1]) - 2) / U));
+  const k = Math.ceil(g.NU / maxU);
+  const base = Math.floor(g.NU / k), rem = g.NU % k;
+  const segs = []; for (let i = 0; i < k; i++) segs.push(base + (i < rem ? 1 : 0));
+  return segs;
+}
+
 // ------------------------------------------------------------------
 //  Corte con colas de milano (puzzle) para piezas que no caben en la cama
 // ------------------------------------------------------------------
@@ -242,7 +520,6 @@ export function puzzleSplit(K, solid, cut, cuts, inn, tabPos, tab = { neck: 9, h
 
 export function fitsRect(a, b, bed) { return (a <= bed[0] && b <= bed[1]) || (a <= bed[1] && b <= bed[0]); }
 
-// Elige nº de trozos (na x nb) mínimo para que quepa en la cama
 export function planSplit(eA, eB, bed, tabDepth = 9) {
   let best = null;
   for (let na = 1; na <= 6; na++) for (let nb = 1; nb <= 6; nb++) {
@@ -252,13 +529,7 @@ export function planSplit(eA, eB, bed, tabDepth = 9) {
   return best || { na: 6, nb: 6, fail: true };
 }
 
-// ------------------------------------------------------------------
-//  Lista de piezas para una configuración
-// ------------------------------------------------------------------
-//  Cada pieza: { id, name, group, color, sig, qty, build(K) -> solid,
-//    print: { rot:[..] }, plane: [a,b] | null, inst: [{t:[..], s:[..]}] }
-export const COLORS = { frame: '#e0782c', frame2: '#f0a868', face: '#f3b27a', tray: '#e9893c', acc: '#c65f1a', metal: '#9aa1a8' };
-
+// Tramos de pared lateral que caben en la cama (para las tapas laterales por defecto)
 export function wallSegments(cfg, g) {
   const bed = cfg.bed;
   let maxU = 1;
@@ -273,300 +544,173 @@ export function wallSegments(cfg, g) {
   return segs;
 }
 
-export function moduleLayout(cfg) {
-  let u = 1;
-  return cfg.modules.map((m, i) => { const r = { m, i, u0: u }; u += m.u; return r; });
-}
+// ------------------------------------------------------------------
+//  Lista de piezas
+// ------------------------------------------------------------------
+//  Cada pieza: { id, name, group, color, sig, build(K) -> solid, print, plane, inst: [{t, s}], panelId?, explode }
+export const COLORS = { frame: '#e0782c', panel: '#f3b27a', side: '#e9893c', tray: '#e9893c', acc: '#c65f1a', rail: '#d06a24' };
 
-export function deviceWarnings(cfg, g) {
-  const w = [];
-  for (const { m, u0 } of moduleLayout(cfg)) {
-    const tag = `U${u0}${m.u > 1 ? '–' + (u0 + m.u - 1) : ''} ${MODULE_TYPES[m.type].short}`;
-    if (m.dev) {
-      const [dw, dd, dh] = m.dev;
-      if (dw > g.OPEN - 2 * g.TOL - 6) w.push(`${tag}: ${dw} mm de ancho no cabe entre los laterales de la bandeja (máx. ${Math.floor(g.OPEN - 2 * g.TOL - 6)} mm). Mide el equipo o usa el estándar de 19".`);
-      if (dd > g.D - 20) w.push(`${tag}: ${dd} mm de fondo supera el fondo útil (${g.D - 20} mm). Aumenta el fondo del rack.`);
-      if (dh > m.u * U - g.TRAY_Z - 3 - 5) w.push(`${tag}: ${dh} mm de alto necesita al menos ${Math.ceil((dh + g.TRAY_Z + 8) / U)}U.`);
-    }
-    if (m.type === 'compute') {
-      if (m.u * U < MB[0] + 8 + g.TRAY_Z + 3 + 2) w.push(`${tag}: la placa micro-ATX vertical necesita 6U.`);
-      if (g.D < 250) w.push(`${tag}: la placa de 244 mm necesita un fondo de al menos 250 mm.`);
-    }
-    if (m.type === 'storage' && g.D < HDD_MOD[1] + 50) w.push(`${tag}: los módulos de disco de 3,5" necesitan ~${HDD_MOD[1] + 50} mm de fondo.`);
-  }
-  return w;
+export function panelLabel(p) {
+  if (p.side === 'top') return SIDES.top;
+  return `${SIDE_SHORT[p.side]} U${p.u0}${p.nu > 1 ? '–' + (p.u0 + p.nu - 1) : ''}`;
+}
+function designName(p) {
+  if (!p.shapes.length) return 'lisa';
+  if (p.auto) return TEMPLATES[p.tpl].toLowerCase();
+  const fans = p.shapes.filter(s => s.t === 'fan').map(s => s.s);
+  return 'diseño propio' + (fans.length ? ` · vent. ${fans.join('+')} mm` : '');
 }
 
 export function buildPartList(cfg) {
   const g = derive(cfg);
   const P = [];
-  const gsig = [cfg.std, g.D, g.WALL, g.FT].join('|');
-  const { W, D, Z0, NU, POCKET, PLATE_T } = g;
+  const gsig = [cfg.std, g.D, g.WALL, g.FT, g.RT].join('|');
+  const { W, D, Z0, NU, PLATE_T } = g;
+  const shelves = (cfg.shelves || []).filter(s => s.u <= NU);
 
   // --- Estructura -------------------------------------------------
-  const segs = wallSegments(cfg, g);
-  const segZ = []; { let z = Z0; for (const s of segs) { segZ.push(z); z += s * U; } }
-  const uniq = [...new Set(segs)];
-  for (const nu of uniq) {
-    const zs = segs.map((s, i) => s === nu ? segZ[i] : null).filter(z => z !== null);
-    P.push({ id: `pared_${nu}u_izq`, name: `Pared lateral ${nu}U izquierda`, group: 'Estructura', color: COLORS.frame,
-      sig: `wall|${gsig}|${nu}|L`, build: K => sideWall(K, g, nu).solid, print: [0, -90, 0], plane: ['y', 'z'],
-      inst: zs.map(z => ({ t: [0, 0, z] })), fan: { surf: 'left', n: 'x', n0: g.RT, th: g.WALL, hb: nu * U } });
-    P.push({ id: `pared_${nu}u_der`, name: `Pared lateral ${nu}U derecha`, group: 'Estructura', color: COLORS.frame,
-      sig: `wall|${gsig}|${nu}|R`, build: K => K.mir(sideWall(K, g, nu).solid, [1, 0, 0]), print: [0, 90, 0], plane: ['y', 'z'],
-      inst: zs.map(z => ({ t: [W, 0, z] })), fan: { surf: 'right', n: 'x', n0: -g.RT - g.WALL, th: g.WALL, hb: nu * U } });
-  }
   const cornerInst = [];
   for (const [mx, my] of [[1, 1], [-1, 1], [1, -1], [-1, -1]]) {
     const tx = mx < 0 ? W : 0, ty = my < 0 ? D : 0;
     cornerInst.push({ t: [tx, ty, PLATE_T], s: [mx, my, 1] });
-    cornerInst.push({ t: [tx, ty, Z0 + NU * U - POCKET], s: [mx, my, -1] });
+    cornerInst.push({ t: [tx, ty, g.TOPZ], s: [mx, my, -1] });
   }
   P.push({ id: 'bloque_esquina', name: 'Bloque de esquina', group: 'Estructura', color: COLORS.acc, sig: `cb|${gsig}`,
     build: K => cornerBlock(K, g), print: [0, 0, 0], plane: null, inst: cornerInst });
-  P.push({ id: 'tapa_inferior', name: 'Tapa inferior', group: 'Estructura', color: COLORS.acc, sig: `pb|${gsig}`,
-    build: K => plateFull(K, g, false), print: [0, 0, 0], plane: ['x', 'y'], inst: [{ t: [0, 0, 0] }], explode: [0, 0, -1], fan: { surf: 'bottom', n: 'z', n0: 0, th: PLATE_T } });
-  P.push({ id: 'tapa_superior', name: 'Tapa superior', group: 'Estructura', color: COLORS.acc, sig: `pt|${gsig}`,
-    build: K => plateFull(K, g, true), print: [0, 0, 0], plane: ['x', 'y'], inst: [{ t: [0, 0, Z0 + NU * U - POCKET] }], explode: [0, 0, 1], fan: { surf: 'top', n: 'z', n0: 0, th: PLATE_T } });
+  P.push({ id: 'base', name: 'Base', group: 'Estructura', color: COLORS.acc, sig: `pb|${gsig}`,
+    build: K => plateFull(K, g, false), print: [0, 0, 0], plane: ['x', 'y'], inst: [{ t: [0, 0, 0] }], explode: [0, 0, -1] });
   P.push({ id: 'pata', name: 'Pata', group: 'Estructura', color: '#3a3a3a', sig: 'foot', build: K => foot(K), print: [0, 0, 0], plane: null,
     inst: [[28, 40], [W - 28, 40], [28, D - 40], [W - 28, D - 40]].map(([x, y]) => ({ t: [x, y, -12] })), explode: [0, 0, -1.5] });
+  if (!cfg.panels.some(p => p.side === 'top'))
+    P.push({ id: 'tapa_superior_lisa', name: 'Tapa superior (estructura)', group: 'Estructura', color: COLORS.acc, sig: `pt|${gsig}`,
+      build: K => plateFull(K, g, true), print: [0, 0, 0], plane: ['x', 'y'], inst: [{ t: [0, 0, g.TOPZ] }], explode: [0, 0, 1] });
 
-  // --- Módulos ------------------------------------------------------
-  const maxFaceU = Math.max(1, Math.floor((Math.max(cfg.bed[0], cfg.bed[1]) + 0.8) / U));
-  const rearAgg = new Map();
-  for (const { m, i, u0 } of moduleLayout(cfg)) {
-    const z = g.uz(u0);
-    const T = MODULE_TYPES[m.type];
-    const grp = `U${u0}${m.u > 1 ? '–' + (u0 + m.u - 1) : ''} · ${T.short}`;
-    const key = `m${i}_${m.type}`;
-    const face = (optsFn, name, extraSig) => P.push({ id: `${key}_frontal`, name, group: grp, color: COLORS.face,
-      sig: `face|${gsig}|${m.u}|${extraSig}`, build: K => facePlate(K, g, m.u, optsFn(K)).solid, print: [90, 0, 0], plane: ['x', 'z'],
-      inst: [{ t: [0, 0, z] }], explode: [0, -1, 0], fan: { surf: 'front', n: 'y', n0: -g.FT, th: g.FT, hb: m.u * U - 0.8 } });
-    const trayPart = (lip = 15) => P.push({ id: `${key}_bandeja`, name: 'Bandeja', group: grp, color: COLORS.tray,
-      sig: `tray|${gsig}|${lip}`, build: K => tray(K, g, lip), print: [0, 0, 0], plane: ['x', 'y'], inst: [{ t: [0, 0, z + g.TRAY_Z] }] });
-    if (T.tray) {
-      // traseras en tramos imprimibles
-      let left = m.u, zz = z;
-      while (left > 0) {
-        const n = Math.min(left, maxFaceU, left > maxFaceU && left - maxFaceU < 2 ? Math.ceil(left / 2) : 99);
-        const k = `trasera_${n}u`;
-        if (!rearAgg.has(k)) rearAgg.set(k, { n, inst: [] });
-        rearAgg.get(k).inst.push({ t: [0, D, zz], s: [1, -1, 1] });
-        left -= n; zz += n * U;
-      }
+  if (g.printed) {
+    const segs = railSegments(cfg, g);
+    let z = Z0; const at = new Map();
+    for (const n of segs) { if (!at.has(n)) at.set(n, []); at.get(n).push(z); z += n * U; }
+    for (const [n, zs] of at) {
+      const inst = [];
+      for (const z0 of zs) for (const [mx, my] of [[1, 1], [-1, 1], [1, -1], [-1, -1]]) inst.push({ t: [mx < 0 ? W : 0, my < 0 ? D : 0, z0], s: [mx, my, 1] });
+      P.push({ id: `rail_${n}u`, name: `Raíl en L impreso, tramo ${n}U`, group: 'Raíles impresos', color: COLORS.rail, sig: `rail|${gsig}|${n}`,
+        build: K => railSeg(K, g, n), print: [0, 90, 0], plane: null, inst, explode: [0, 0, 0], rail: true });
     }
-    if (m.type === 'storage') {
-      face(K => ({ trayHoles: true, extra: (h, t) => storageCuts(g, h, t, K) }), 'Frontal almacenamiento (ventilador 80 mm)', 'st');
-      trayPart();
-    } else if (m.type === 'compute') {
-      face(K => ({ trayHoles: true, extra: (h, t) => computeCuts(g, h, t, m.button, K) }), 'Frontal cómputo (rejilla + pulsador)', 'cp' + (m.button ? 'b' : ''));
-      trayPart(10);
+  }
+
+  // --- Tapas -------------------------------------------------------
+  const GROUP = { front: 'Tapas frontales', rear: 'Tapas traseras', left: 'Laterales', right: 'Laterales', top: 'Tapa superior' };
+  for (const p of cfg.panels) {
+    const sa = safeArea(p, g), dsig = JSON.stringify(p.shapes);
+    const base = { group: GROUP[p.side], panelId: p.id, side: p.side, name: `${panelLabel(p)} · ${designName(p)}` };
+    if (p.side === 'front' || p.side === 'rear') {
+      const trayZ = shelves.filter(s => s.u >= p.u0 && s.u < p.u0 + p.nu).map(s => (s.u - p.u0) * U + g.TRAY_Z + 8);
+      const flip = p.side === 'rear' ? W : 0;
+      P.push({ ...base, id: `${p.side === 'front' ? 'frontal' : 'trasera'}_${p.id}`, color: COLORS.panel,
+        sig: `face|${gsig}|${p.nu}|${trayZ.join(',')}|${flip}|${dsig}`,
+        build: K => { const d = designSolid(K, p.shapes, sa, flip); return facePlate(K, g, p.nu, { trayZ, extra: d ? [K.tr(K.rot(d, [90, 0, 0]), [0, -g.FT / 2, 0])] : [] }); },
+        print: [90, 0, 0], plane: ['x', 'z'],
+        inst: [p.side === 'front' ? { t: [0, 0, g.uz(p.u0)] } : { t: [0, D, g.uz(p.u0)], s: [1, -1, 1] }],
+        explode: [0, p.side === 'front' ? -1 : 1, 0] });
+    } else if (p.side === 'left' || p.side === 'right') {
+      const L = p.side === 'left';
+      P.push({ ...base, id: `lateral_${L ? 'izq' : 'der'}_${p.id}`, color: COLORS.side,
+        sig: `side|${gsig}|${p.nu}|${L}|${dsig}`,
+        build: K => L ? sidePanel(K, g, p, true) : K.mir(sidePanel(K, g, p, false), [1, 0, 0]),
+        print: L ? [0, -90, 0] : [0, 90, 0], plane: ['y', 'z'],
+        inst: [{ t: [L ? 0 : W, 0, g.uz(p.u0)] }], explode: [L ? -1 : 1, 0, 0] });
+    } else {
+      P.push({ ...base, id: `superior_${p.id}`, color: COLORS.acc, sig: `top|${gsig}|${dsig}`,
+        build: K => plateFull(K, g, true, designSolid(K, p.shapes, sa, 0)),
+        print: [0, 0, 0], plane: ['x', 'y'], inst: [{ t: [0, 0, g.TOPZ] }], explode: [0, 0, 1] });
+    }
+  }
+
+  // --- Baldas ------------------------------------------------------
+  for (const s of shelves) {
+    const z = g.uz(s.u) + g.TRAY_Z;
+    const grp = `Balda U${s.u} · ${s.label && s.dev ? s.label : SHELF_TYPES[s.type].short}`;
+    const key = `balda_${s.id}`;
+    const lip = s.type === 'placa' ? 10 : 15;
+    P.push({ id: `${key}_bandeja`, name: 'Bandeja', group: grp, color: COLORS.tray, sig: `tray|${gsig}|${lip}`,
+      build: K => tray(K, g, lip), print: [0, 0, 0], plane: ['x', 'y'], inst: [{ t: [0, 0, z] }], shelfId: s.id });
+    if ((s.type === 'mini' || s.type === 'bandeja') && s.dev) {
+      const y0 = Math.max(10, Math.min(30, D - s.dev[1] - 12));
+      P.push({ id: `${key}_topes`, name: `Topes para ${s.label || 'equipo'}`, group: grp, color: COLORS.acc,
+        sig: `stops|${gsig}|${s.dev.join('x')}|${y0}`, build: K => stops(K, g, s.dev, y0), print: [0, 0, 0], plane: null,
+        inst: [{ t: [0, 0, z + 3] }], shelfId: s.id });
+    }
+    if (s.type === 'placa') {
       P.push({ id: `${key}_placa_montaje`, name: 'Placa de montaje de la placa base', group: grp, color: COLORS.acc,
         sig: `mb|${gsig}`, build: K => mbPlate(K, g), print: [0, -90, 0], plane: ['y', 'z'],
-        inst: [{ t: [g.FL_W + g.TOL + 3, 0, z + g.TRAY_Z + 3] }] });
+        inst: [{ t: [g.FL_W + g.TOL + 3, 0, z + 3] }], shelfId: s.id });
       P.push({ id: `${key}_cuna_sfx`, name: 'Cuna fuente SFX', group: grp, color: COLORS.acc, sig: `sfx|${gsig}`,
-        build: K => sfxCradle(K, g), print: [0, 0, 0], plane: null, inst: [{ t: [0, 0, z + g.TRAY_Z + 3] }] });
-    } else if (m.type === 'mini' || m.type === 'router' || m.type === 'shelf') {
-      const faceH = m.u * U - 0.8;
-      const win = [Math.min(m.dev[0] + 13, g.OPEN - 12), Math.max(10, Math.min(m.dev[2] + 26, faceH - 22))];
-      face(() => ({ trayHoles: true, window: win }), `Frontal con ventana ${Math.round(win[0])}×${Math.round(win[1])}`, `w${win.join('x')}`);
-      trayPart();
-      if (m.type === 'mini' || m.type === 'shelf') {
-        const y0 = Math.max(10, Math.min(30, D - m.dev[1] - 12));
-        P.push({ id: `${key}_topes`, name: `Topes para ${m.label || 'equipo'}`, group: grp, color: COLORS.acc,
-          sig: `stops|${gsig}|${m.dev.join('x')}|${y0}`, build: K => stops(K, g, m.dev, y0), print: [0, 0, 0], plane: null,
-          inst: [{ t: [0, 0, z + g.TRAY_Z + 3] }] });
-      }
-    } else if (m.type === 'patch') {
-      const n = Math.max(1, Math.min(m.keystones || 8, Math.floor((g.OPEN - 10) / 25)));
-      face(K => ({ extra: (h, t) => keystoneCuts(K, g, h, t, n) }), `Patch panel ${n} keystones`, `ks${n}`);
-    } else if (m.type === 'blank') {
-      face(K => ({ extra: (h, t) => ventRows(K, g, h, t, 40, g.W - 80, { margin: 12 }) }), `Tapa ventilada ${m.u}U`, 'blank');
+        build: K => sfxCradle(K, g), print: [0, 0, 0], plane: null, inst: [{ t: [0, 0, z + 3] }], shelfId: s.id });
     }
   }
-  for (const [k, r] of rearAgg) {
-    P.push({ id: k, name: `Trasera ${r.n}U (paso de cables)`, group: 'Traseras', color: COLORS.face, sig: `rear|${gsig}|${r.n}`,
-      build: K => facePlate(K, g, r.n, { trayHoles: true, window: [g.OPEN - 30, r.n * U - 22] }).solid, print: [90, 0, 0], plane: ['x', 'z'],
-      inst: r.inst, explode: [0, 1, 0], fan: { surf: 'rear', n: 'y', n0: -g.FT, th: g.FT, hb: r.n * U - 0.8 } });
-  }
-  return { parts: applyFans(P, cfg, g), g, segs };
-}
-
-function storageCuts(g, h, t, K) {
-  if (!K) return [];
-  const { cylY, U: un } = H(K);
-  const cx = g.W - g.FL_W - 62, cz = h / 2;
-  const out = [];
-  const fc = fanCut(K, 80, t);
-  out.push(K.tr(K.rot(fc, [-90, 0, 0]), [cx, -t, cz]));
-  out.push(...ventRows(K, g, h, t, 34, Math.max(20, cx - 34 - 60), { pitch: 16, margin: 20 }));
-  return out;
-}
-
-function computeCuts(g, h, t, button, K) {
-  if (!K) return [];
-  const { cylY } = H(K);
-  const out = ventRows(K, g, h, t, 40, Math.min(150, g.W - 140), { pitch: 14, margin: 22 });
-  if (button) {
-    const bx = g.W - g.FL_W - 36;
-    out.push(cylY(bx, -t - 1, h - 40, 16.2, t + 2));
-    out.push(cylY(bx, -t - 1, h - 65, 5.2, t + 2));
-  }
-  return out;
-}
-
-function keystoneCuts(K, g, h, t, n) {
-  const { box } = H(K);
-  const out = [];
-  for (let i = 0; i < n; i++) out.push(box(g.W / 2 - (n - 1) / 2 * 25 + i * 25 - 7.45, -t - 1, (h - 16.5) / 2, 14.9, t + 2, 16.5));
-  return out;
+  return { parts: P, g };
 }
 
 // Maquetas para la vista (no se imprimen): cajas [x,y,z,sx,sy,sz,color,etiqueta]
 export function mockups(cfg, g) {
   const out = [];
-  for (const { m, u0 } of moduleLayout(cfg)) {
-    const z = g.uz(u0) + g.TRAY_Z + 3;
-    if (m.dev) {
-      const y0 = m.type === 'router' ? Math.max(10, Math.min(50, g.D - m.dev[1] - 12)) : Math.max(10, Math.min(30, g.D - m.dev[1] - 12));
-      const col = m.type === 'router' ? '#eeeeec' : m.type === 'mini' ? '#3b3e44' : '#6c7a89';
-      out.push([(g.W - m.dev[0]) / 2, y0, z, ...m.dev, col, m.label]);
+  for (const s of cfg.shelves || []) {
+    if (s.u > g.NU) continue;
+    const z = g.uz(s.u) + g.TRAY_Z + 3;
+    if (s.dev) {
+      const y0 = s.type === 'router' ? Math.max(10, Math.min(50, g.D - s.dev[1] - 12)) : Math.max(10, Math.min(30, g.D - s.dev[1] - 12));
+      const col = s.type === 'router' ? '#eeeeec' : s.type === 'mini' ? '#3b3e44' : '#6c7a89';
+      out.push([(g.W - s.dev[0]) / 2, y0, z, ...s.dev, col, s.label]);
     }
-    if (m.type === 'storage') {
-      for (let i = 0; i < (m.hdd || 0); i++) out.push([30, 40, z + i * HDD_MOD[2], HDD_MOD[0], HDD_MOD[1], HDD_MOD[2] - 1, '#3a7fc4', 'HDD 3,5"']);
-      for (let i = 0; i < (m.ssd || 0); i++) out.push([g.W - g.FL_W - 95, 120, z + i * SSD_MOD[2], SSD_MOD[0], SSD_MOD[1], SSD_MOD[2] - 0.8, '#8a63c9', 'SSD 2,5"']);
-      out.push([g.W - g.FL_W - 102, 4, g.uz(u0) + (m.u * U - 80) / 2, 80, 25, 80, '#222222', 'Ventilador 80 mm']);
+    if (s.type === 'discos') {
+      for (let i = 0; i < (s.hdd || 0); i++) out.push([30, 40, z + i * HDD_MOD[2], HDD_MOD[0], HDD_MOD[1], HDD_MOD[2] - 1, '#3a7fc4', 'HDD 3,5"']);
+      for (let i = 0; i < (s.ssd || 0); i++) out.push([g.W - g.FL_W - 95, 120, z + i * SSD_MOD[2], SSD_MOD[0], SSD_MOD[1], SSD_MOD[2] - 0.8, '#8a63c9', 'SSD 2,5"']);
     }
-    if (m.type === 'compute') {
+    if (s.type === 'placa') {
       const bx = g.FL_W + g.TOL + 3 + 4 + STANDOFF;
-      out.push([bx, g.D - 3 - MB[1], z + MB_Z0, 1.6, MB[1], MB[0], '#2f6b3a', 'Placa HP IPM17-002']);
+      out.push([bx, g.D - 3 - MB[1], z + MB_Z0, 1.6, MB[1], MB[0], '#2f6b3a', 'Placa base']);
       out.push([bx + 1.6, g.D - 3 - 48 - 96, z + MB_Z0 + 132, 52, 96, 96, '#555555', 'Disipador']);
-      out.push([g.W - g.FL_W - 8 - SFX[2], 12, z + 3, SFX[2], SFX[1], SFX[0], '#5a5f66', 'Fuente SFX']);
-      for (let i = 0; i < (m.ssd || 0); i++) out.push([g.W - g.FL_W - 8 - SSD_MOD[0], 130, z + i * SSD_MOD[2], SSD_MOD[0], SSD_MOD[1], SSD_MOD[2] - 0.8, '#8a63c9', 'SSD 2,5"']);
+      out.push([g.W - g.FL_W - 8 - SFX[2], 12, z, SFX[2], SFX[1], SFX[0], '#5a5f66', 'Fuente SFX']);
+      for (let i = 0; i < (s.ssd || 0); i++) out.push([g.W - g.FL_W - 8 - SSD_MOD[0], 130, z + i * SSD_MOD[2], SSD_MOD[0], SSD_MOD[1], SSD_MOD[2] - 0.8, '#8a63c9', 'SSD 2,5"']);
     }
   }
   return out;
 }
 
+export const RAIL_SHOPS = [
+  { name: 'Penn Elcom R0883-2mm (raíl doble 14U, agujero cuadrado, 2 mm)', url: 'https://penn-elcom.com/mx/14u-full-hole-double-rack-rail-with-square-holes-2mm-thick-r0883-2mm-14' },
+  { name: 'Hammond CLSR (raíl de montaje con agujero cuadrado, varias alturas)', url: 'https://www.hammfg.com/product/clsr' },
+  { name: 'DeskPi RackMate T1 / T2 (rack metálico de 10″ completo)', url: 'https://deskpi.com/products/deskpi-rackmate-t1-2' },
+];
+
 export function hardware(cfg, g, parts) {
-  const faces = parts.filter(p => /_frontal$|^trasera_/.test(p.id)).reduce((s, p) => s + p.inst.length, 0);
-  const trays = parts.filter(p => /_bandeja$/.test(p.id)).length;
+  const fr = cfg.panels.filter(p => p.side === 'front' || p.side === 'rear');
+  const ears = fr.length * 4;
+  const sideBolts = cfg.panels.filter(p => p.side === 'left' || p.side === 'right').reduce((s, p) => s + 2 * sideBoltZ(p.nu).length, 0);
+  const shelves = (cfg.shelves || []).filter(s => s.u <= g.NU);
   const tabs = trayTabX(g).length;
-  const walls = wallSegments(cfg, g);
-  let wallBolts = 0;
-  for (const nu of walls) { let n = 2; for (let k = 1; k <= nu - 1; k += 2) n++; wallBolts += 2 * 2 * n; }
-  const compute = cfg.modules.filter(m => m.type === 'compute').length;
-  return [
-    [`Raíles de rack metálicos de ${g.NU}U (perfil en L, agujero cuadrado)`, 4],
-    ['Tuercas enjauladas M6 + tornillos M6×12 (4 por frontal/trasera)', faces * 4],
-    ['Tornillos M4×10 pared–raíl (taladrar ala del raíl a 4,5 mm)', wallBolts],
-    ['Insertos roscados M4 (bloques de esquina y patas)', 8 * 2 + 4],
-    ['Tornillos M4×16 avellanados tapa–bloque', 8],
-    ['Tornillos M4×20 para patas', 4],
-    ['Tornillos M3×10 + tuerca, bandeja–frontal/trasera', trays * tabs * 2],
-    ['Espigas de 6×20 mm entre tramos de pared', Math.max(0, walls.length - 1) * 2 * 2],
-    ...Object.entries((cfg.fans || []).reduce((o, f) => (o[f.s] = (o[f.s] || 0) + 1, o), {})).map(([sz, n]) => [`Ventilador de ${sz} mm (+4 tornillos de ventilador o M${sz <= 40 ? 3 : 4})`, n]),
-    ...(compute ? [['Insertos M3 + tornillos M3×8 para la placa base', 8 * compute], ['Tornillos M3×10 placa de montaje–bandeja', 3 * compute]] : []),
-  ];
-}
-
-
-// ------------------------------------------------------------------
-//  Ventiladores colocados por el usuario (cfg.fans)
-//  fan = { surf: front|rear|left|right|top|bottom, a, b, s }
-//  front/rear: a = x, b = z · left/right: a = y, b = z · top/bottom: a = x, b = y   (coords de montaje)
-// ------------------------------------------------------------------
-export const FAN_SIZES = { 40: 32, 60: 50, 80: 71.5, 92: 82.5, 120: 105, 140: 124.5 };
-export const SURF_NAMES = { front: 'frontal', rear: 'trasera', left: 'lateral izq.', right: 'lateral der.', top: 'tapa superior', bottom: 'tapa inferior' };
-
-// Rejilla en el plano XY (normal +Z), centrada en el origen, z de -1 a th+1
-function fanCut(K, S, th) {
-  const { cylZ, box } = H(K);
-  const hs = FAN_SIZES[S] || S * 0.85;
-  const rings = [];
-  const rMax = S / 2 - 2.5;
-  rings.push(cylZ(0, 0, -1, Math.min(14, S * 0.22), th + 2));
-  for (let r = Math.min(7, S * 0.11) + 3; r + 3 <= rMax; r += 7) rings.push(K.diff(cylZ(0, 0, -1, 2 * (r + 4), th + 2), [cylZ(0, 0, -2, 2 * r, th + 4)]));
-  const spokes = [box(-1.6, -S, -3, 3.2, 2 * S, th + 6), box(-S, -1.6, -3, 2 * S, 3.2, th + 6)];
-  const grill = K.diff(K.union(rings), spokes);
-  const holes = [];
-  for (const sx of [-1, 1]) for (const sy of [-1, 1]) holes.push(cylZ(sx * hs / 2, sy * hs / 2, -1, S <= 40 ? 3.4 : 4.4, th + 2));
-  return K.union([grill, ...holes]);
-}
-function fanPad(K, S, th) { return K.tr(K.cube([S + 6, S + 6, th]), [-S / 2 - 3, -S / 2 - 3, 0]); }
-function placeOnSurf(K, s, fr, la, lb) {
-  if (fr.n === 'y') return K.tr(K.rot(s, [-90, 0, 0]), [la, fr.n0, lb]);
-  if (fr.n === 'x') return K.tr(K.rot(s, [0, 90, 0]), [fr.n0, la, lb]);
-  return K.tr(s, [la, lb, fr.n0]);
-}
-function fanLocal(f, inst, fr) {
-  if (fr.n === 'y') return [f.a - inst.t[0], f.b - inst.t[2]];
-  if (fr.n === 'x') return [f.a - inst.t[1], f.b - inst.t[2]];
-  return [f.a, f.b];
-}
-// Zona donde puede ir el centro de un ventilador de tamaño S en una superficie (coords locales de la pieza)
-export function fanBounds(fr, g, S) {
-  const m = S / 2 + 3;
-  if (fr.n === 'y') return { a: [g.FL_W + m + 1, g.W - g.FL_W - m - 1], b: [m, fr.hb - m] };
-  if (fr.n === 'x') return { a: [g.RS + 2 + m, g.D - g.RS - 2 - m], b: [6 + m, fr.hb - 6 - m] };
-  return { a: [g.RF + 3 + m, g.W - g.RF - 3 - m], b: [g.RS + 3 + m, g.D - g.RS - 3 - m] };
-}
-// Ajusta un punto de clic (coords de montaje) a una posición válida; null si no cabe
-export function snapFan(part, inst, g, S, a, b) {
-  const fr = part.fan; if (!fr) return null;
-  const bd = fanBounds(fr, g, S);
-  if (bd.a[0] > bd.a[1] || bd.b[0] > bd.b[1]) return null;
-  const [la, lb] = fanLocal({ a, b }, inst, fr);
-  const ca = Math.min(bd.a[1], Math.max(bd.a[0], la)), cb = Math.min(bd.b[1], Math.max(bd.b[0], lb));
-  const off = fr.n === 'y' ? [inst.t[0], inst.t[2]] : fr.n === 'x' ? [inst.t[1], inst.t[2]] : [0, 0];
-  return { surf: fr.surf, a: Math.round((ca + off[0]) * 2) / 2, b: Math.round((cb + off[1]) * 2) / 2, s: S };
-}
-// Posición 3D (centro y normal) de un ventilador para la maqueta
-export function fanPose(f, g) {
-  const top = g.Z0 + g.NU * U - g.POCKET;
-  switch (f.surf) {
-    case 'front': return { c: [f.a, 12.5, f.b], n: 'y' };
-    case 'rear': return { c: [f.a, g.D - 12.5, f.b], n: 'y' };
-    case 'left': return { c: [g.RT + g.WALL + 12.5, f.a, f.b], n: 'x' };
-    case 'right': return { c: [g.W - g.RT - g.WALL - 12.5, f.a, f.b], n: 'x' };
-    case 'top': return { c: [f.a, f.b, top - 12.5], n: 'z' };
-    case 'bottom': return { c: [f.a, f.b, g.PLATE_T + 12.5], n: 'z' };
-  }
-}
-
-function applyFans(P, cfg, g) {
-  const fans = cfg.fans || [];
-  if (!fans.length) return P;
+  const fans = {};
+  for (const p of cfg.panels) for (const s of p.shapes) if (s.t === 'fan') fans[s.s] = (fans[s.s] || 0) + 1;
+  const ks = cfg.panels.reduce((n, p) => n + p.shapes.filter(s => s.t === 'keystone').reduce((m, s) => m + s.n, 0), 0);
   const out = [];
-  for (const p of P) {
-    if (!p.fan) { out.push(p); continue; }
-    const fr = p.fan, groups = new Map();
-    for (const inst of p.inst) {
-      const list = [];
-      for (const f of fans) {
-        if (f.surf !== fr.surf) continue;
-        const [la, lb] = fanLocal(f, inst, fr);
-        const bd = fanBounds(fr, g, f.s);
-        if (la >= bd.a[0] - 0.6 && la <= bd.a[1] + 0.6 && lb >= bd.b[0] - 0.6 && lb <= bd.b[1] + 0.6) list.push([+la.toFixed(1), +lb.toFixed(1), f.s]);
-      }
-      const k = JSON.stringify(list);
-      if (!groups.has(k)) groups.set(k, { list, inst: [] });
-      groups.get(k).inst.push(inst);
-    }
-    let n = 0;
-    for (const { list, inst } of groups.values()) {
-      if (!list.length) { out.push({ ...p, inst }); continue; }
-      n++;
-      const base = p.build;
-      out.push({ ...p, inst, id: `${p.id}_vent${groups.size > 1 || n > 1 ? n : ''}`, name: `${p.name} · ${list.length} vent. ${list.map(l => l[2]).join('+')} mm`,
-        sig: p.sig + '|fans' + JSON.stringify(list), fans: list,
-        build: K => {
-          const s = base(K);
-          const pads = list.map(([la, lb, S]) => placeOnSurf(K, fanPad(K, S, fr.th), fr, la, lb));
-          const cuts = list.map(([la, lb, S]) => placeOnSurf(K, fanCut(K, S, fr.th), fr, la, lb));
-          return K.diff(K.union([s, ...pads]), cuts);
-        } });
-    }
+  if (g.printed) {
+    const segs = railSegments(cfg, g);
+    out.push([`Insertos roscados M5 (Ø6,4) en los raíles impresos, uno por tornillo de tapa`, ears]);
+    out.push(['Tornillos M5×12 para las tapas frontales y traseras', ears]);
+    out.push(['Insertos roscados M4 (Ø5,6) en el ala lateral de los raíles', sideBolts]);
+    if (segs.length > 1) out.push(['Espigas de acero de 3×16 mm entre tramos de raíl', (segs.length - 1) * 4 * 2]);
+  } else {
+    out.push([`Raíles metálicos de ${g.NU}U (${String((g.NU * U).toFixed(1)).replace('.', ',')} mm), perfil en L, agujero cuadrado`, 4]);
+    out.push(['Tuercas enjauladas M6 + tornillos M6×12 para las tapas frontales y traseras', ears]);
+    out.push(['Taladros de 4,5 mm en el ala lateral del raíl para los laterales', sideBolts]);
   }
+  out.push(['Tornillos M4×10 + tuerca, lateral–raíl', sideBolts]);
+  out.push(['Insertos roscados M4 (bloques de esquina y patas)', 8 * 2 + 4]);
+  out.push(['Tornillos M4×16 avellanados tapa–bloque', 8]);
+  out.push(['Tornillos M4×20 para patas', 4]);
+  if (shelves.length) out.push(['Tornillos M3×10 + tuerca, bandeja–tapa', shelves.length * tabs * 2]);
+  for (const [sz, n] of Object.entries(fans)) out.push([`Ventilador de ${sz} mm (+4 tornillos de ventilador)`, n]);
+  if (ks) out.push(['Conectores keystone RJ45', ks]);
+  const placas = shelves.filter(s => s.type === 'placa').length;
+  if (placas) { out.push(['Insertos M3 + tornillos M3×8 para la placa base', 8 * placas]); out.push(['Tornillos M3×10 placa de montaje–bandeja', 3 * placas]); }
   return out;
 }
